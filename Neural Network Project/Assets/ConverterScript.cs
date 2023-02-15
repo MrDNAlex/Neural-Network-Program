@@ -6,13 +6,21 @@ using System.IO;
 
 public class ConverterScript : MonoBehaviour
 {
+    //Path from asset folder
+    public string exportPath;
 
+    public Vector2Int subImageSize;
 
-    [SerializeField] Image imageHolder;
-    [SerializeField] Image View;
+   
+    [Header("Image")]
+    [SerializeField] Texture2D Image;
 
-    [SerializeField] Texture2D six;
-    [SerializeField] Texture2D four;
+    [Header("UI Stuff")]
+    [SerializeField] Button StartBTN;
+    [SerializeField] Text Log;
+    [SerializeField] Text Percent;
+    [SerializeField] Slider PercentSlider;
+
 
     // Assets/New Images/Four
     // Assets/New Images/Six
@@ -21,34 +29,11 @@ public class ConverterScript : MonoBehaviour
     void Start()
     {
 
-        Texture2D newImage = new Texture2D(20, 20);
-
+       // Texture2D newImage = new Texture2D(20, 20);
 
        
-        /*
-        for (int i = 0; i < 20; i ++)
-        {
-            for (int j = 0; j < 20; j++)
-            {
 
-                newImage.SetPixel(i, j, six.GetPixel(i, j));
-
-               // six.SetPixel(i, j, Color.green);
-            }
-
-        }
-
-        newImage.Apply();
-
-        View.sprite = Sprite.Create(newImage, new Rect(0, 0, newImage.width, newImage.height), new Vector2(0, 0));
-        */
-
-
-
-
-
-       // createSubImages(six, new Vector2Int(20, 20), "Assets/New Images/Six/");
-       // createSubImages(four, new Vector2Int(20, 20), "Assets/New Images/Four/");
+        StartBTN.onClick.AddListener(Convert);
 
     }
 
@@ -58,16 +43,21 @@ public class ConverterScript : MonoBehaviour
         
     }
 
-    public void createSubImages (Texture2D image, Vector2Int imgSize, string path)
+    public IEnumerator createSubImages (Texture2D image, Vector2Int imgSize, string path)
     {
         //Start with 2 loops that determine starting coordinates
 
         int imgNum = 0;
 
+        int totalNum = (image.width/imgSize.x) * (image.height/imgSize.y);
+        Log.text = "";
+        Log.text += "Start";
+
         for (int startX = 0; startX < image.width; startX = startX + 20)
         {
             for (int startY = 0; startY < image.height; startY = startY + 20)
             {
+                bool saveImg = false;
 
                 Texture2D newImg = new Texture2D(imgSize.x, imgSize.y, TextureFormat.RGB24, false);
 
@@ -76,32 +66,46 @@ public class ConverterScript : MonoBehaviour
                     for (int pixelY = 0; pixelY < imgSize.y; pixelY++)
                     {
                         newImg.SetPixel(pixelX, pixelY, image.GetPixel(startX + pixelX, startY + pixelY));
+
+                        if (image.GetPixel(startX + pixelX, startY + pixelY).r <= 0.3)
+                        {
+                            saveImg = true;
+                        }
                     }
                 }
 
                 //Save Texture as PNG
-                byte[] bytes = newImg.EncodeToPNG();
-                var dirPath = path;
+
+                if (saveImg)
+                {
+                    byte[] bytes = newImg.EncodeToPNG();
+                    var dirPath = path;
+
+                    File.WriteAllBytes(dirPath + "Image" + imgNum + ".png", bytes);
+                }
                
-                File.WriteAllBytes(dirPath + "Image" + imgNum + ".png", bytes);
 
                 imgNum++;
+
+
+                Percent.text = (float)imgNum / totalNum*100 + " % ";
+                PercentSlider.value = (float)imgNum / totalNum;
+                yield return null;
+
             }
         }
 
-        Debug.Log("Complete");
 
-
-
-
-
+        Log.text += "\n Finished";
+       
     }
 
 
     //What if we did cyclindrical coordinates
 
-
-
-
+    public void Convert ()
+    {
+        StartCoroutine(createSubImages(Image, subImageSize, exportPath + "/"));
+    }
 
 }

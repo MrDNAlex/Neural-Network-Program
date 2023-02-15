@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
+[System.Serializable]
 public class NeuralNetwork 
 {
 
@@ -20,6 +20,11 @@ public class NeuralNetwork
         }
     }
 
+    public NeuralNetwork ()
+    {
+
+    }
+
     //Run the entire neural network and get the outputs
     double[] CalcOutput (double[] inputs)
     {
@@ -31,14 +36,20 @@ public class NeuralNetwork
     }
 
     //Get the index of the output of the neural network with highest value
-    int Classify (double[] inputs)
+    public int Classify (double[] inputs)
     {
         double[] output = CalcOutput(inputs);
+
         return IndexOfMax(output);
     }
 
+    public double[] Classify2 (double[] inputs)
+    {
+        return CalcOutput(inputs);
+    }
 
-    int IndexOfMax (double[] inputs)
+
+    public int IndexOfMax (double[] inputs)
     {
         int index = 0;
         double maxVal = inputs[0];
@@ -53,7 +64,7 @@ public class NeuralNetwork
         return index;
     }
 
-    double Cost(DataPoint dataPoint)
+    public double Cost(DataPoint dataPoint)
     {
         double[] outputs = CalcOutput(dataPoint.inputs);
         Layer outputLayer = layers[layers.Length - 1];
@@ -68,7 +79,7 @@ public class NeuralNetwork
 
     }
 
-    double Cost (DataPoint[] data)
+    public double Cost (DataPoint[] data)
     {
         double totalCost = 0;
         foreach(DataPoint dataPoint in data)
@@ -88,12 +99,16 @@ public class NeuralNetwork
 
         foreach (DataPoint dataPoint in trainingBatch)
         {
-            trainingIndex += 1;
+            trainingIndex ++;
             UpdateAllGradients(dataPoint);
-            Debug.Log((float)(trainingIndex / trainingBatch.Length) + " % Done");
+            //Debug.Log(((float)trainingIndex / trainingBatch.Length) + " % Done");
         }
 
+
+
         ApplyAllGradients(learnRate / trainingBatch.Length);
+
+        //Reset All gradients
 
     }
 
@@ -127,10 +142,13 @@ public class NeuralNetwork
         }
     }
 
+    
+
 
 
 
 }
+
 
 public class LayerLearnData
 {
@@ -145,10 +163,6 @@ public class LayerLearnData
         activations = new double[layer.numNodesOut];
         nodeValues = new double[layer.numNodesOut];
     }
-
-
-
-
 
 }
 

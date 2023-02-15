@@ -9,15 +9,27 @@ using System.Linq;
 
 public class ImageToDataPointConverter : MonoBehaviour
 {
-    // Start is called before the first frame update
 
-    //First import all the textures
+    //From Resources Folder
+    public List<string> importPaths = new List<string>();
 
-    //Loop through all of them while also making an array with the normalized pixel values
+   
 
-    public List<DataPoint> allData = new List<DataPoint>();
+    public string fileName;
 
-    public List<Texture2D> allImages = new List<Texture2D>();
+    //From Asset Folder
+    public string dataExportPath;
+
+
+    [Header("UI Stuff")]
+    [SerializeField] Button StartBTN;
+    [SerializeField] Text Log;
+    [SerializeField] Text Percent;
+    [SerializeField] Slider PercentSlider;
+
+    List<DataPoint> allData = new List<DataPoint>();
+
+     List<Texture2D> allImages = new List<Texture2D>();
 
 
     void Start()
@@ -26,9 +38,9 @@ public class ImageToDataPointConverter : MonoBehaviour
         //0 = 4
         //1 = 6
 
-        StartCoroutine(createData());
+       // StartCoroutine(createData());
 
-
+        StartBTN.onClick.AddListener(startConversion);
     }
 
     // Update is called once per frame
@@ -62,39 +74,45 @@ public class ImageToDataPointConverter : MonoBehaviour
 
     public IEnumerator createData ()
     {
-        //Load images
-        allImages = Resources.LoadAll<Texture2D>("NewFour").ToList();
+        Log.text = "";
+        for (int type = 0; type < importPaths.Count; type ++)
+        {
+            Log.text += "\n Loading Images from " + importPaths[type];
 
-        Debug.Log(allImages.Count);
+            yield return null;
 
+            //Load images
+            allImages = Resources.LoadAll<Texture2D>(importPaths[type]).ToList();
+
+            Log.text += "\n Images Loaded";
+
+            yield return null;
+
+            for (int i = 0; i < allImages.Count; i++)
+            {
+                allData.Add(imageToData(allImages[i], type, 2));
+
+                Percent.text = (float)i / allImages.Count * 100 + " % ";
+                PercentSlider.value = (float)i / allImages.Count;
+                yield return null;
+            }
+
+            Log.text += "\n Finished Converting " + importPaths[type];
+            yield return null;
+        }
+
+       
+        Log.text += "\n Finished Processing";
         yield return null;
 
-        //Fours  (0)
-        for (int i = 0; i < allImages.Count; i ++)
-        {
-            allData.Add(imageToData(allImages[i], 0, 2));
-            Debug.Log((float)i / allImages.Count * 100 + " % ");
-            yield return null;
-        }
 
-        //Sixes (1)
-        allImages = Resources.LoadAll<Texture2D>("NewSix").ToList();
-
-        Debug.Log(allImages.Count);
-
-        for (int i = 0; i < allImages.Count; i++)
-        {
-            allData.Add(imageToData(allImages[i], 1, 2));
-            Debug.Log((float)i / allImages.Count * 100 + " % ");
-            yield return null;
-        }
-
-        Debug.Log("Finished");
 
         DataStorage data = new DataStorage(allData);
 
+        Log.text += "\n Finished Data Storage Conversion";
+        yield return null;
 
-        var dir = "Assets/Resources/" + "AllData" + ".json";
+        var dir = dataExportPath + "/" + fileName + ".json";
 
         string jsonData = JsonUtility.ToJson(data, true);
 
@@ -102,8 +120,14 @@ public class ImageToDataPointConverter : MonoBehaviour
 
         File.WriteAllText(dir, jsonData);
 
-        Debug.Log(allData.Count);
+        Log.text += "\n Saved and Finished";
+        yield return null;
 
+    }
+
+    public void startConversion ()
+    {
+        StartCoroutine(createData());
     }
 
 }

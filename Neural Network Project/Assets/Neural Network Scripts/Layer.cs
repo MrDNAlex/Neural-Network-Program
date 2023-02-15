@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class Layer
 {
     //Input layer doesn't count
@@ -35,7 +36,41 @@ public class Layer
         costGradientWeights = new double[nodesIn, nodesOut];
         costGradientBias = new double[nodesOut];
 
+
+        weightedInputs = new double[nodesOut];
+
         InitRandomWeights();
+    }
+
+    public Layer (LayerSaver laySave)
+    {
+
+        int nodesIn = laySave.numNodesIn;
+        int nodesOut = laySave.numNodesOut;
+
+        numNodesIn = nodesIn;
+        numNodesOut = nodesOut;
+
+        weights = new double[nodesIn, nodesOut];
+        biases = new double[nodesOut];
+        costGradientWeights = new double[nodesIn, nodesOut];
+        costGradientBias = new double[nodesOut];
+
+        weightedInputs = new double[nodesOut];
+
+        this.biases = laySave.biases;
+
+        //load weights 
+
+        for (int i = 0; i < numNodesIn; i++)
+        {
+            for (int j = 0; j < numNodesOut; j++)
+            {
+                weights[i, j] = laySave.weights[i * numNodesOut + j];
+            }
+        }
+
+
     }
 
 
@@ -50,6 +85,7 @@ public class Layer
             double weightInput = biases[nodeOut];
             for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
             {
+               
                 weightInput += input[nodeIn] * weights[nodeIn, nodeOut];
             }
 
@@ -104,6 +140,23 @@ public class Layer
 
         }
 
+
+        //Reset Gradients
+
+        for (int i = 0; i < costGradientBias.Length; i ++)
+        {
+            costGradientBias[i] = 0;
+        }
+
+        for (int i = 0; i < numNodesIn; i++)
+        {
+            for (int j = 0; j < numNodesOut; j ++)
+            {
+                costGradientWeights[i, j] = 0;
+            }
+            
+        }
+
     }
 
 
@@ -156,6 +209,7 @@ public class Layer
         double[] nodeVals = new double[expectedOutputs.Length];
         for (int i = 0; i < nodeVals.Length; i ++)
         {
+
             double costDerivative = nodeCostDerivative(activations[i], expectedOutputs[i]);
             double activationDerivative = ActivationDerivative(weightedInputs[i]);
             nodeVals[i] = costDerivative * activationDerivative;

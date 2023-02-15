@@ -10,27 +10,23 @@ using System.Linq;
 
 public class ImageProcessing : MonoBehaviour
 {
+    //From Resource Folder
+    public string importPath;
 
-    [SerializeField] Texture2D image;
-    [SerializeField] Texture2D rotImage;
-    [SerializeField] Texture2D fun;
-    [SerializeField] float angle;
-    [SerializeField] Texture2D expand;
-    [SerializeField] Texture2D compress;
+    //From Assets folder
+    public string exportPath;
+
+    public int maxCopies;
+    public int minCopies;
+
+    [Header("UI Stuff")]
+    [SerializeField] Button StartBTN;
+    [SerializeField] Text Log;
+    [SerializeField] Text Percent;
+    [SerializeField] Slider PercentSlider;
    
-    //Design a system that gets the center location of the image
-
-    //The for every pixel it grabs the color and position in cartesian
-
-    //then it converts 
-
-
-
-    //Use the figured out rotational matrix we found...
-
-
-
-    //If All else fails maybe the first paragraph of this will come in handy
+   
+    
 
     // https://en.wikipedia.org/wiki/Rotation_matrix#In_two_dimensions
 
@@ -71,7 +67,9 @@ public class ImageProcessing : MonoBehaviour
         //Tomorrow make a order a program so that it takes in the folder with path to all images, then for every image it does between like 3-10 images where it gives random angle and noise, then it saves in the new folders
 
 
-        createVersions();
+        //createVersions();
+
+        StartBTN.onClick.AddListener(ProcessImages);
 
     }
 
@@ -127,11 +125,7 @@ public class ImageProcessing : MonoBehaviour
         {
             for (int yIndex = 0; yIndex < newImage.height; yIndex++)
             {
-                // Debug.Log("Pos");
-               //  Debug.Log(xIndex);
-                // Debug.Log(yIndex);
-
-
+               
                 int xCenter = Mathf.FloorToInt(image.width/2);
                 int yCenter = Mathf.FloorToInt(image.height / 2);
 
@@ -142,26 +136,12 @@ public class ImageProcessing : MonoBehaviour
                 int oldX = Mathf.FloorToInt(translatedX * Mathf.Cos(angRad) - translatedY*Mathf.Sin(angRad));
 
                 int oldY = Mathf.FloorToInt(translatedX * Mathf.Sin(angRad) + translatedY * Mathf.Cos(angRad));
-               // Debug.Log("Old Pos");
-              //  Debug.Log(oldX);
-              //  Debug.Log(oldY);
-
-
+              
                 newImage.SetPixel(xIndex, yIndex, getValidPixel(image, oldX, oldY));
 
             }
-           // Debug.Log( (float)xIndex / newImage.width * 100 + " % ");
-           
         }
-
-        //Save Texture as PNG
-       // byte[] bytes = newImage.EncodeToPNG();
-
-
-        //File.WriteAllBytes("Assets/New Images/Testing/" + name + ".png", bytes);
-
         return newImage;
-
     }
 
     public Color getValidPixel (Texture2D image, int oldX, int oldY)
@@ -180,8 +160,6 @@ public class ImageProcessing : MonoBehaviour
            // Debug.Log("White");
             return Color.white;
         }
-
-      
 
     }
 
@@ -241,8 +219,6 @@ public class ImageProcessing : MonoBehaviour
 
         int num = Mathf.FloorToInt((float)(newImage.width * mult / 5));
 
-        //Debug.Log(num);
-
         for (int i = 0; i < num; i ++)
         {
             int xPos = Mathf.FloorToInt(Random.Range(0, newImage.width));
@@ -254,29 +230,26 @@ public class ImageProcessing : MonoBehaviour
 
         }
 
-        //Save Texture as PNG
-       // byte[] bytes = newImage.EncodeToPNG();
-
-
-      //  File.WriteAllBytes("Assets/New Images/Testing/" + name + ".png", bytes);
-
         return newImage;
     }
 
-    public void createVersions ()
+    public IEnumerator createVersions ()
     {
         //Grab all images from the folder
 
-        List<Texture2D> imgs = Resources.LoadAll<Texture2D>("Six").ToList();
+        Log.text = "";
 
-        Debug.Log(imgs.Count);
+        List<Texture2D> imgs = Resources.LoadAll<Texture2D>(importPath).ToList();
+
+        Log.text += "Images Loaded";
+        yield return null;
 
         int imgCount = 0;
 
         for (int j = 0; j < imgs.Count; j ++)
         {
             //Number of copies
-            int num = Random.Range(4, 8);
+            int num = Random.Range(minCopies, maxCopies);
 
             for (int i = 0; i < num; i++)
             {
@@ -285,7 +258,7 @@ public class ImageProcessing : MonoBehaviour
 
                 //Get a random rotation 
 
-                float angle = Random.Range(0, 360);
+                float angle = Random.Range(-30, 50);
 
                 newImage = ApplyRotation(newImage, angle);
 
@@ -294,15 +267,27 @@ public class ImageProcessing : MonoBehaviour
                 byte[] bytes = newImage.EncodeToPNG();
 
 
-                File.WriteAllBytes("Assets/Resources/NewSix/" + "Image" + imgCount + ".png", bytes);
+                File.WriteAllBytes(exportPath + "/" + "Image" + imgCount + ".png", bytes);
 
                 imgCount++;
 
             }
 
-            Debug.Log((float)j / imgs.Count * 100 + " % ");
+            //Debug.Log((float)j / imgs.Count * 100 + " % ");
+            //Log.text += "\n" + (float)j / imgs.Count * 100 + " % ";
+            PercentSlider.value = (float)j / imgs.Count;
+            yield return null;
 
         }
+
+        Log.text += "\n" + "Finished";
+
+
+    }
+
+    public void ProcessImages ()
+    {
+        StartCoroutine(createVersions());
 
     }
     
