@@ -97,13 +97,19 @@ public class NeuralNetwork
 
         int trainingIndex = 0;
 
+        System.Threading.Tasks.Parallel.For(0, trainingBatch.Length, (i) =>
+        {
+            trainingIndex++;
+            UpdateAllGradients(trainingBatch[i]);
+        });
+
+        /*
         foreach (DataPoint dataPoint in trainingBatch)
         {
-            trainingIndex ++;
-            UpdateAllGradients(dataPoint);
+           
             //Debug.Log(((float)trainingIndex / trainingBatch.Length) + " % Done");
         }
-
+        */
 
 
         ApplyAllGradients(learnRate / trainingBatch.Length);
