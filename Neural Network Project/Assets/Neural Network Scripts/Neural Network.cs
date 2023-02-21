@@ -92,7 +92,7 @@ public class NeuralNetwork
 
     }
 
-    public void Learn (DataPoint[] trainingBatch, double learnRate)
+    public void Learn (DataPoint[] trainingBatch, double learnRate, double regularization = 0, double momentum = 0)
     {
 
         int trainingIndex = 0;
@@ -112,7 +112,7 @@ public class NeuralNetwork
         */
 
 
-        ApplyAllGradients(learnRate / trainingBatch.Length);
+        ApplyAllGradients(learnRate / trainingBatch.Length, regularization, momentum);
 
         //Reset All gradients
 
@@ -140,11 +140,11 @@ public class NeuralNetwork
 
     }
 
-    void ApplyAllGradients (double learnRate)
+    void ApplyAllGradients (double learnRate, double regularization, double momentum)
     {
         for (int i = 0; i < layers.Length; i ++)
         {
-            layers[i].ApplyGradients(learnRate);
+            layers[i].ApplyGradients(learnRate, regularization, momentum);
         }
     }
 

@@ -25,7 +25,6 @@ public class TotalConversion : MonoBehaviour
     List<List<Texture2D>> processedImages = new List<List<Texture2D>>();
 
     [Header("Image To Data")]
-    //List<Texture2D>  = new List<Texture2D>();
     List<DataPoint> allData = new List<DataPoint>();
     [SerializeField] int outputNum;
 
@@ -34,21 +33,22 @@ public class TotalConversion : MonoBehaviour
     NeuralNetwork neuro;
     DataPoint[,] feedingData;
 
-    [SerializeField] List<NetworkTrainingInfo> networkSize = new List<NetworkTrainingInfo>();
+    [SerializeField] List<NetworkSize> networkSize = new List<NetworkSize>();
     [SerializeField] List<int> dataPerBatch = new List<int>();
     [SerializeField] List<float> learnRates = new List<float>();
 
-    // [SerializeField] int[] neuralNetworkSize;
-
-    // [SerializeField] int numPerBatch;
-
-    //  [SerializeField] float learnRate;
-    //From Asset Folder
+    List<NetworkTrainingInfo> networkInfos = new List<NetworkTrainingInfo>();
 
     [SerializeField] int costDataDivider;
+    //From Asset Folder
     [SerializeField] string exportPath;
 
     [SerializeField] string fileName;
+    [SerializeField] bool saveBest;
+
+    // List<NeuralNetwork> networks = new List<NeuralNetwork>();
+    float lastAccuracy = 0;
+    NeuralNetwork bestNetwork;
 
 
 
@@ -67,12 +67,17 @@ public class TotalConversion : MonoBehaviour
     System.DateTime startTime;
     System.DateTime endTime;
 
-    string messageLog = "";
+    //string messageLog = "";
+    MessageLog messageLog = new MessageLog();
 
+    //add 3 things
 
-    //Next Night add a feature that display total amount of time it took to convert all the data
+    //Display the correct network size
+    //Add an option to save the best performing network (check accuracy first, if equal check all cost) 
+    //Fix message log, make a class for it
 
-
+    //Regularization = 0.1
+    //Momentum = 0.9
 
     // Start is called before the first frame update
     void Start()
@@ -343,20 +348,18 @@ public class TotalConversion : MonoBehaviour
 
         allTrainData = shuffledData.ToArray();
 
-
         DataPoint[] costData = new DataPoint[allTrainData.Length / costDataDivider];
         for (int i = 0; i < allTrainData.Length / costDataDivider; i++)
         {
             costData[i] = allTrainData[i];
         }
 
-
-
         createLine("Finished Data Shuffle");
         yield return null;
 
-        int neuralNetCount = 0;
+        networkInfos = new List<NetworkTrainingInfo>();
 
+        //Create the neural Networks
         for (int Netindex = 0; Netindex < networkSize.Count; Netindex++)
         {
             for (int batchIndex = 0; batchIndex < dataPerBatch.Count; batchIndex++)
@@ -364,140 +367,164 @@ public class TotalConversion : MonoBehaviour
                 //Maybe Replace this with Coroutines?
                 for (int learnIndex = 0; learnIndex < learnRates.Count; learnIndex++)
                 {
-
-                    createLine("Start Training Network " + neuralNetCount);
-                    yield return null;
-
-                    createLine("Network Info: " + "Size:" + networkSize[Netindex].neuralNetSize.ToString() + "  NumPerBatch: " + dataPerBatch[batchIndex] + "  LearnRate: " + learnRates[learnIndex]);
-                     yield return null;
-
-                    //Create a new Neural Network
-                    neuro = new NeuralNetwork(networkSize[Netindex].neuralNetSize);
-
-                    //Calculate How many batches needed
-                    int numOfBatches = Mathf.FloorToInt(allTrainData.Length / dataPerBatch[batchIndex]);
-
-                    feedingData = new DataPoint[numOfBatches, dataPerBatch[batchIndex]];
-
-                    createLine("Starting Batching");
-                     yield return null;
-
-                    for (int i = 0; i < numOfBatches; i++)
-                    {
-                        for (int j = 0; j < dataPerBatch[batchIndex]; j++)
-                        {
-                            feedingData[i, j] = allTrainData[dataPerBatch[batchIndex] * i + j];
-
-                        }
-
-                        Percent.text = (float)i / numOfBatches * 100 + " % ";
-                        PercentSlider.value = (float)i / numOfBatches;
-                         yield return null;
-
-                    }
-
-                    createLine("Finished Batching");
-                    yield return null;
-
-                    StartCoroutine(displayCost(false, false, neuro, costData));
-
-                    StartCoroutine(displayCost(true, false, neuro, costData));
-
-                    for (int i = 0; i < numOfBatches; i++)
-                    {
-
-                        DataPoint[] batch = new DataPoint[dataPerBatch[batchIndex]];
-
-                        for (int j = 0; j < dataPerBatch[batchIndex]; j++)
-                        {
-
-                            batch[j] = feedingData[i, j];
-
-                        }
-
-                        //Teach the Neural Network
-                        neuro.Learn(batch, learnRates[learnIndex]);
-
-                        Percent.text = (float)i / numOfBatches * 100 + " % ";
-                        PercentSlider.value = (float)i / numOfBatches;
-                        yield return null;
-                    }
-
-                    createLine("Finished Teaching");
-                    yield return null;
-
-                    StartCoroutine(displayCost(false, true, neuro, costData));
-
-                    StartCoroutine(displayCost(true, true, neuro, costData));
-
-                    createLine("Start Testing");
-                    yield return null;
-
-                    List<DataPoint> testing = new List<DataPoint>();
-
-                    createLine("Creating Testing Data");
-                    yield return null;
-
-                    for (int i = 0; i < processedImages.Count; i++)
-                    {
-                        for (int j = 0; j < dataPerBatch[batchIndex]; j++)
-                        {
-
-                            testing.Add(imageToData(processedImages[i][j], i, networkSize[Netindex].neuralNetSize[networkSize[Netindex].neuralNetSize.Length - 1]));
-
-                        }
-                    }
-
-                    int accuracy = 0;
-
-                    createLine("Evaluating");
-                    yield return null;
-                    foreach (DataPoint data in testing)
-                    {
-                        Debug.Log(neuro.Classify(data.inputs) + " : " + data.label);
-
-                        if (neuro.Classify(data.inputs) == data.label)
-                        {
-                            accuracy++;
-                        }
-
-                    }
-
-                    createLine((float)accuracy / testing.Count * 100 + " % Accuracy");
-                    yield return null;
-
-                    System.DateTime trainEnd = System.DateTime.UtcNow;
-
-                    createLine("Time Elapsed Training: " + (trainEnd - trainStart));
-                     yield return null;
-
-                    createLine("Total Time elapsed: " + (trainEnd - startTime));
-                     yield return null;
-
-                    createLine("Saving" + fileName + neuralNetCount + "Size:" + networkSize[Netindex].neuralNetSize.ToString() + "  NumPerBatch: " + dataPerBatch[batchIndex] + "  LearnRate: " + learnRates[learnIndex]);
-                    yield return null;
-
-                    //Save the Neural Network in a file
-                    NeuralNetworkSaver saver = new NeuralNetworkSaver(neuro);
-
-                    var dir = exportPath + "/" + fileName + neuralNetCount + ".json";
-
-                    string jsonData = JsonUtility.ToJson(saver, true);
-
-                    Debug.Log(jsonData);
-
-                    File.WriteAllText(dir, jsonData);
-
-                    createLine("Finished Saving");
-                     yield return null;
-
-                    neuralNetCount++;
+                    networkInfos.Add(new NetworkTrainingInfo(networkSize[Netindex].neuralNetSize, learnRates[learnIndex], dataPerBatch[batchIndex] ));
 
                 }
-
             }
         }
 
+
+        for (int index = 0; index < networkInfos.Count; index++)
+        {
+
+            createLine("Start Training Network " + index);
+            yield return null;
+
+            createLine("Network Info: " + "Size:" + sizeToString(networkInfos[index].neuralNetSize) + "  NumPerBatch: " + networkInfos[index].dataPerBatch + "  LearnRate: " + networkInfos[index].learnRate);
+            yield return null;
+
+            //Create a new Neural Network
+            neuro = new NeuralNetwork(networkInfos[index].neuralNetSize);
+
+            //Calculate How many batches needed
+            int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkInfos[index].dataPerBatch);
+
+            feedingData = new DataPoint[numOfBatches, networkInfos[index].dataPerBatch];
+
+            createLine("Starting Batching");
+            yield return null;
+
+            for (int i = 0; i < numOfBatches; i++)
+            {
+                for (int j = 0; j < networkInfos[index].dataPerBatch; j++)
+                {
+                    feedingData[i, j] = allTrainData[networkInfos[index].dataPerBatch * i + j];
+
+                }
+
+                Percent.text = (float)i / numOfBatches * 100 + " % ";
+                PercentSlider.value = (float)i / numOfBatches;
+                yield return null;
+
+            }
+
+            createLine("Finished Batching");
+            yield return null;
+
+            StartCoroutine(displayCost(false, false, neuro, costData));
+
+            StartCoroutine(displayCost(true, false, neuro, costData));
+
+            for (int i = 0; i < numOfBatches; i++)
+            {
+
+                DataPoint[] batch = new DataPoint[networkInfos[index].dataPerBatch];
+
+                for (int j = 0; j < networkInfos[index].dataPerBatch; j++)
+                {
+
+                    batch[j] = feedingData[i, j];
+
+                }
+
+                //Teach the Neural Network
+                neuro.Learn(batch, networkInfos[index].learnRate, 0.1, 0.9);
+
+                Percent.text = (float)i / numOfBatches * 100 + " % ";
+                PercentSlider.value = (float)i / numOfBatches;
+                yield return null;
+            }
+
+            createLine("Finished Teaching");
+            yield return null;
+
+            StartCoroutine(displayCost(false, true, neuro, costData));
+
+            StartCoroutine(displayCost(true, true, neuro, costData));
+
+            createLine("Start Testing");
+            yield return null;
+
+            List<DataPoint> testing = new List<DataPoint>();
+
+            createLine("Creating Testing Data");
+            yield return null;
+
+            for (int i = 0; i < processedImages.Count; i++)
+            {
+                for (int j = 0; j < networkInfos[index].dataPerBatch; j++)
+                {
+
+                    testing.Add(imageToData(processedImages[i][j], i,  networkInfos[index].neuralNetSize[networkInfos[index].neuralNetSize.Length - 1]));
+
+                }
+            }
+
+            int accuracy = 0;
+
+            createLine("Evaluating");
+            yield return null;
+            foreach (DataPoint data in testing)
+            {
+                Debug.Log(neuro.Classify(data.inputs) + " : " + data.label);
+
+                if (neuro.Classify(data.inputs) == data.label)
+                {
+                    accuracy++;
+                }
+
+            }
+
+            createLine((float)accuracy / testing.Count * 100 + " % Accuracy");
+            yield return null;
+
+            //Make a couroutine
+            StartCoroutine(saveBestNetwork(neuro, (float)accuracy/testing.Count, allTrainData));
+
+            System.DateTime trainEnd = System.DateTime.UtcNow;
+
+            createLine("Time Elapsed Training: " + (trainEnd - trainStart));
+            yield return null;
+
+            createLine("Total Time elapsed: " + (trainEnd - startTime));
+            yield return null;
+
+            float actualAccuracy = accuracy / testing.Count * 100; 
+
+            createLine("Saving" + fileName + index + "Size:" + sizeToString(networkInfos[index].neuralNetSize) + "  NumPerBatch: " + networkInfos[index].dataPerBatch + "  LearnRate: " + networkInfos[index].learnRate + "    Accuracy: " + actualAccuracy + " %");
+            yield return null;
+
+            //No longer doing this method
+            //Save the Neural Network in a file
+            //NeuralNetworkSaver saver = new NeuralNetworkSaver(neuro);
+
+            var dir = exportPath + "/" + fileName + index + ".json";
+
+            string jsonData = JsonUtility.ToJson(neuro, true);
+
+            Debug.Log(jsonData);
+
+            File.WriteAllText(dir, jsonData);
+
+            createLine("Finished Saving");
+            yield return null;
+
+        }
+
+        if (saveBest)
+        {
+            createLine("Best Network has the following stats");
+            createLine("Final Accuracy: " + lastAccuracy * 100 + " %");
+            StartCoroutine(displayCost(true, true, bestNetwork, allTrainData));
+
+            var direc = "Assets/Resources/NeuralNetworks/BestNetworks" + "/" + fileName + ".json";
+
+            string jsonDat = JsonUtility.ToJson(bestNetwork, true);
+
+            Debug.Log(jsonDat);
+
+            File.WriteAllText(direc, jsonDat);
+        }
 
         saveMessageLog();
 
@@ -697,7 +724,7 @@ public class TotalConversion : MonoBehaviour
 
         line.transform.GetChild(0).GetComponent<Text>().text = message;
 
-        messageLog += "\n" + message;
+        messageLog.addMessage(message);
 
     }
 
@@ -708,12 +735,12 @@ public class TotalConversion : MonoBehaviour
         {
             if (all)
             {
-                createLine("Single Cost After: " + neuro.Cost(data[0]));
+                createLine("All Cost After: " + neuro.Cost(data));
                 yield return null;
             }
             else
             {
-                createLine("All Cost After: " + neuro.Cost(data));
+                createLine("Single Cost After: " + neuro.Cost(data[0]));
                 yield return null;
             }
         }
@@ -736,7 +763,7 @@ public class TotalConversion : MonoBehaviour
 
     public void saveMessageLog ()
     {
-        var dir = "Asset/"+"MessageLog" + ".json";
+        var dir = "Assets/Resources/NeuralNetworks/MessageLog/" + "MessageLog(" + fileName + ").json";
 
         string jsonData = JsonUtility.ToJson(messageLog, true);
 
@@ -745,5 +772,77 @@ public class TotalConversion : MonoBehaviour
         File.WriteAllText(dir, jsonData);
     }
 
+    public IEnumerator saveBestNetwork (NeuralNetwork network, float accuracy, DataPoint[] allTrainData)
+    {
+        //Save best
+        if (bestNetwork != null)
+        {
+            //Compare for best
+
+            if ((accuracy) >= lastAccuracy)
+            {
+                //In the case they are equal, check for the lowest cost
+                if (accuracy == lastAccuracy)
+                {
+                    double bestCost = bestNetwork.Cost(allTrainData);
+
+                    double currentCost = network.Cost(allTrainData);
+
+                    if (currentCost < bestCost)
+                    {
+                        //Replace Network witht the new one
+                        bestNetwork = network;
+                        createLine("New Best Network Made");
+                        createLine("Accuracy: " + accuracy * 100 + " %");
+                        createLine("All Cost: " + currentCost);
+                    }
+                } else
+                {
+                    bestNetwork = network;
+                    lastAccuracy = accuracy;
+
+                    createLine("New Best Network Made");
+                    createLine("Accuracy: " + accuracy * 100 + " %");
+
+                }
+               
+            }
+        } else
+        {
+            bestNetwork = network;
+            lastAccuracy = accuracy;
+        }
+
+        yield return null;
+    }
+
+    public string sizeToString (int[] size)
+    {
+        string str = "[" + size[0];
+
+        for (int i = 1; i < size.Length - 1; i ++)
+        {
+            str += ", " + size[i];
+        }
+
+        str += ", " + size[size.Length - 1] + "]";
+
+        return str;
+    }
+
 
 }
+
+[System.Serializable]
+public class MessageLog
+{
+    public List<string> messages = new List<string>();
+
+    public void addMessage (string message)
+    {
+        messages.Add(message);
+    }
+
+
+}
+

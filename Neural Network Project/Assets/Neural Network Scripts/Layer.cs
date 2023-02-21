@@ -13,10 +13,17 @@ public class Layer
     public int numNodesIn, numNodesOut;
 
     public double[] costGradientBias;
-    public double[,] costGradientWeights;
+    // public double[,] costGradientWeights;
+    public double[] costGradientWeights;
 
     public double[] biases;
-    public double[,] weights;
+    // public double[,] weights;
+    public double[] weights;
+
+    public double[] weightVolicities;
+    public double[] biasVelocities;
+
+    
 
     public double[] activations;
     public double[] weightedInputs;
@@ -31,10 +38,12 @@ public class Layer
         numNodesIn = nodesIn;
         numNodesOut = nodesOut;
 
-        weights = new double[nodesIn, nodesOut];
+        weights = new double[nodesIn* nodesOut];
         biases = new double[nodesOut];
-        costGradientWeights = new double[nodesIn, nodesOut];
-        costGradientBias = new double[nodesOut];
+        costGradientWeights = new double[weights.Length];
+        costGradientBias = new double[biases.Length];
+        weightVolicities = new double[weights.Length];
+        biasVelocities = new double[biases.Length];
 
 
         weightedInputs = new double[nodesOut];
@@ -42,6 +51,7 @@ public class Layer
         InitRandomWeights();
     }
 
+    //Might not need this anymore
     public Layer (LayerSaver laySave)
     {
 
@@ -51,9 +61,9 @@ public class Layer
         numNodesIn = nodesIn;
         numNodesOut = nodesOut;
 
-        weights = new double[nodesIn, nodesOut];
+        weights = new double[nodesIn* nodesOut];
         biases = new double[nodesOut];
-        costGradientWeights = new double[nodesIn, nodesOut];
+        costGradientWeights = new double[nodesIn* nodesOut];
         costGradientBias = new double[nodesOut];
 
         weightedInputs = new double[nodesOut];
@@ -62,12 +72,12 @@ public class Layer
 
         //load weights 
 
-        for (int i = 0; i < numNodesIn; i++)
+        for (int i = 0; i < numNodesIn * numNodesOut; i++)
         {
-            for (int j = 0; j < numNodesOut; j++)
-            {
-                weights[i, j] = laySave.weights[i * numNodesOut + j];
-            }
+          
+            
+                weights[i] = laySave.weights[i];
+            
         }
 
 
@@ -86,7 +96,7 @@ public class Layer
             for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
             {
                
-                weightInput += input[nodeIn] * weights[nodeIn, nodeOut];
+                weightInput += input[nodeIn] * getWeight(nodeIn, nodeOut);
             }
 
             weightedInputs[nodeOut] = weightInput;
@@ -123,11 +133,29 @@ public class Layer
         return error * error;
     }
 
-
-    //make a function to give random initial weights 
-  
-    public void ApplyGradients (double learnRate)
+    //Update weights and biases
+    public void ApplyGradients (double learnRate, double regularization, double momentum)
     {
+        double weightDecay = (1 - regularization * learnRate);
+
+        for (int i = 0; i < weights.Length; i ++)
+        {
+            double weight = weights[i];
+            double velocity = weightVolicities[i] * momentum - costGradientWeights[i] * learnRate;
+            weightVolicities[i] = velocity;
+            weights[i] = weight * weightDecay + velocity;
+            costGradientWeights[i] = 0;
+        }
+
+        for (int i = 0; i < biases.Length; i ++)
+        {
+            double velocity = biasVelocities[i] * momentum - costGradientBias[i] * learnRate;
+            biasVelocities[i] = velocity;
+            biases[i] += velocity;
+            costGradientBias[i] = 0;
+        }
+
+        /*
         for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
         {
             biases[nodeOut] -= costGradientBias[nodeOut] * learnRate;
@@ -156,6 +184,7 @@ public class Layer
             }
             
         }
+        */
 
     }
 
@@ -166,16 +195,18 @@ public class Layer
 
         System.Random rng = new System.Random();
 
-        for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn ++)
+        for (int i = 0; i < weights.Length; i++)
         {
-            for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
-            {
-                //Get a value between -1 and 1
-                double ranVal = rng.NextDouble() * 2 - 1;
+            weights[i] = RandomInNormalDistribution(rng, 0, 1) / Mathf.Sqrt(numNodesIn);
+        }
 
-                weights[nodeIn, nodeOut] = ranVal / Mathf.Sqrt(numNodesIn);
+        double RandomInNormalDistribution(System.Random rng, double mean, double standardDeviation)
+        {
+            double x1 = 1 - rng.NextDouble();
+            double x2 = 1 - rng.NextDouble();
 
-            }
+            double y1 = Mathf.Sqrt(-2.0f * Mathf.Log((float)x1)) * Mathf.Cos(2.0f * (float)Mathf.PI * (float)x2);
+            return y1 * standardDeviation + mean;
         }
     }
 
@@ -226,7 +257,7 @@ public class Layer
 
             for (int oldNodeIndex = 0; oldNodeIndex < oldNodeVals.Length; oldNodeIndex ++)
             {
-                double weightedInputDeriv = oldLayer.weights[newNodeIndex, oldNodeIndex];
+                double weightedInputDeriv = oldLayer.getWeight(newNodeIndex, oldNodeIndex);
                 newNodeVal += weightedInputDeriv * oldNodeVals[oldNodeIndex];
             }
 
@@ -248,7 +279,7 @@ public class Layer
                 //Update gradients for weights
                 double derivativeCostWRTWeight = inputs[nodeIn] * nodeVals[nodeOut];
 
-                costGradientWeights[nodeIn, nodeOut] += derivativeCostWRTWeight;
+                costGradientWeights[getFlatWeightIndex(nodeIn, nodeOut)] += derivativeCostWRTWeight;
             }
 
             //Update Gradient for biases
@@ -258,9 +289,22 @@ public class Layer
 
     }
 
+    public double getWeight (int nodeIn, int nodeOut)
+    {
 
-   
-    
+        return weights[nodeOut * numNodesIn + nodeIn];
+
+
+    }
+
+    public int getFlatWeightIndex (int inputNeurIndex, int outputNeurIndex)
+    {
+        return outputNeurIndex * numNodesIn + inputNeurIndex;
+
+    }
+
+
+
 
 
 

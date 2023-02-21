@@ -4,6 +4,7 @@ using UnityEngine;
 
 [System.Serializable]
 
+
 public class LayerSaver 
 {
 
@@ -40,12 +41,11 @@ public class LayerSaver
         weights = new double[numNodesIn * numNodesOut];
         //Convert weights to a friendlier format
 
-        for (int i = 0; i < numNodesIn; i ++)
+        for (int i = 0; i < weights.Length; i ++)
         {
-            for (int j = 0; j < numNodesOut; j++)
-            {
-                weights[i * numNodesOut + j] = layer.weights[i, j]; 
-            }
+           
+                weights[i] = layer.weights[i]; 
+           
         }
 
 

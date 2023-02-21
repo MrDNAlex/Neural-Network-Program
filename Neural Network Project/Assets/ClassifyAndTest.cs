@@ -61,10 +61,13 @@ public class ClassifyAndTest : MonoBehaviour
     public void LoadStuff ()
     {
         //Load Neural Network
-
+        /*
         savedNeuro = loadSaveFromPath(NeuralNetPath);
 
         neuro = savedNeuro.createNetwork(savedNeuro);
+        */
+
+        neuro = loadSaveFromPathNeuralNetwork(NeuralNetPath);
 
         Debug.Log("Neuro Loaded");
 
@@ -240,6 +243,27 @@ public class ClassifyAndTest : MonoBehaviour
             jsonData = File.ReadAllText(path);
             Debug.Log(jsonData);
             return JsonUtility.FromJson<NeuralNetworkSaver>(jsonData);
+        }
+        else
+        {
+            Debug.Log("Doesn't exist");
+            return null;
+        }
+
+    }
+
+    public NeuralNetwork loadSaveFromPathNeuralNetwork(string path)
+    {
+        //This function loads the save named into the currently used save file
+
+        //Debug.Log(path);
+        string jsonData = "";
+        if (File.Exists(path))
+        {
+            //Extract JSON Data
+            jsonData = File.ReadAllText(path);
+            Debug.Log(jsonData);
+            return JsonUtility.FromJson<NeuralNetwork>(jsonData);
         }
         else
         {
