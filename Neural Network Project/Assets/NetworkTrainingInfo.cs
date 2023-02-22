@@ -9,6 +9,8 @@ public class NetworkTrainingInfo
     public int[] neuralNetSize;
     public float learnRate;
     public int dataPerBatch;
+    public float accuracy;
+    public double cost;
 
     public NetworkTrainingInfo (int[] size, float learnRate, int dataPerBatch)
     {
