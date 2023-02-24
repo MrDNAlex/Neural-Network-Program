@@ -888,26 +888,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   networkSize:
-    neuralNetSize: 90010000c800000007000000
-  dataPerBatch: 32
+    neuralNetSize: 00040000c800000004000000
+  dataPerBatch: 16
   learnRates: 0.05
+  learnRateDecay: 0.04
   images:
-  - {fileID: 2800000, guid: d234674aabbedd249a54a5b9ca8bc8b3, type: 3}
-  - {fileID: 2800000, guid: 6f574dfb5cd10be42be57aecff76441a, type: 3}
-  - {fileID: 2800000, guid: b3fe34728fe2550498e1e7f39e7342c5, type: 3}
-  - {fileID: 2800000, guid: 0d6baccc51c112e4d98a19d25ba327db, type: 3}
-  - {fileID: 2800000, guid: 8a66647adc64ff64bbdd9c0e04fce8b1, type: 3}
-  - {fileID: 2800000, guid: 1c00bf8b629aa434b888fcbc7bc392c0, type: 3}
-  - {fileID: 2800000, guid: da7140139f664374aa3ea75cdeefcb55, type: 3}
-  subImageSize: {x: 20, y: 20}
-  maxCopies: 50
-  minCopies: 40
-  maxAngle: -50
-  minAngle: 50
-  outputNum: 7
-  numOfEpochs: 5
-  exportPath: Assets/Resources/NeuralNetworks
-  fileName: Test
+  - {fileID: 2800000, guid: 2d7bb64b788fcc344b1ccd02887f28ef, type: 3}
+  - {fileID: 2800000, guid: 2d036b9b8223c5e42bc4238006533d0c, type: 3}
+  - {fileID: 2800000, guid: ca202c60f7b08f643838af45120e36ca, type: 3}
+  - {fileID: 2800000, guid: 2011e5c4da89d1d4a9dbcee7a2be1548, type: 3}
+  subImageSize: {x: 32, y: 32}
+  maxCopies: 40
+  minCopies: 35
+  maxAngle: -40
+  minAngle: 40
+  outputNum: 4
+  numOfEpochs: 50
+  costDataDivider: 20
+  exportPath: Assets/Resources/NeuralNetworks/BestNetworks
+  fileName: NewSize
   StartBTN: {fileID: 1770273862}
   Percent: {fileID: 1034079072}
   PercentSlider: {fileID: 1529763200}

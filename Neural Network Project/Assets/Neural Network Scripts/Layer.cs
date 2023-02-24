@@ -114,17 +114,17 @@ public class Layer
         //Sigmoid
         return 1 / (1 + Mathf.Exp(-(float)weightedInput));
 
-        /*
+        
         //Hyperbolic tangent
-        double e2w = Mathf.Exp(2 * (float)weightedInput);
-        return (e2w - 1) / (e2w + 1);
+       // double e2w = Mathf.Exp(2 * (float)weightedInput);
+       // return (e2w - 1) / (e2w + 1);
 
         //SiLU
-        return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
+       // return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
 
         //ReLU
-        return Mathf.Max(0, weightedInput)
-        */
+        //return Mathf.Max(0, (float)weightedInput);
+        
     }
 
     public double NodeCost (double outputVal, double expectedVal)
@@ -224,12 +224,14 @@ public class Layer
         //Sigmoid
         double activationVal = ActivationFunction(weightedVal);
         return activationVal * (1 - activationVal);
+
+        //ReLU
+        //return (weightedVal > 0) ? 1 : 0;
     }
 
     public double weightedValDerivative ()
     {
         //Value of the last activation function
-
 
         return 2;
     }

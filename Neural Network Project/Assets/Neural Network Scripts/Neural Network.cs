@@ -148,10 +148,6 @@ public class NeuralNetwork
         }
     }
 
-    
-
-
-
 
 }
 

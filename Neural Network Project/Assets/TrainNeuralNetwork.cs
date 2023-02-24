@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
+using UnityEngine.Rendering;
 
 public class TrainNeuralNetwork : MonoBehaviour
 {
     [Header("Network Settings")]
-    [SerializeField]NetworkSize networkSize;
+    [SerializeField] NetworkSize networkSize;
     [SerializeField] int dataPerBatch;
     [SerializeField] float learnRates;
+    [SerializeField] float learnRateDecay;
 
     NetworkTrainingInfo networkSettings;
 
@@ -35,14 +37,15 @@ public class TrainNeuralNetwork : MonoBehaviour
 
     [Header("Train Network")]
     [SerializeField] int numOfEpochs;
-    //[SerializeField] int costDataDivider;
+    [SerializeField] int costDataDivider;
     //From Asset Folder
     [SerializeField] string exportPath;
-
     [SerializeField] string fileName;
 
     DataPoint[] allTrainData;
     DataPoint[,] feedingData;
+    NeuralNetwork bestNetwork;
+    float lastAccuracy;
 
 
     [Header("UI Stuff")]
@@ -63,6 +66,16 @@ public class TrainNeuralNetwork : MonoBehaviour
     //string messageLog = "";
     MessageLog messageLog = new MessageLog();
 
+    
+
+
+
+    //Feb 23 Implement following features
+
+    //Save the neural Network to the file every time the accuracy increases
+    //Remake all the numbers at higher resolution (32x32) for now to see if the images were just too small
+
+
 
 
 
@@ -71,15 +84,18 @@ public class TrainNeuralNetwork : MonoBehaviour
     {
         //Create network settings
 
+
         networkSettings = new NetworkTrainingInfo(networkSize.neuralNetSize, learnRates, dataPerBatch);
 
         StartBTN.onClick.AddListener(nextStep);
+
+        OnDemandRendering.renderFrameInterval = 4;
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
 
@@ -137,11 +153,17 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             int imgNum = 0;
 
+            Debug.Log(image[i].width);
+            Debug.Log(image[i].height);
+
+            Debug.Log(imgSize.x);
+            Debug.Log(imgSize.y);
+
             int totalNum = (image[i].width / imgSize.x) * (image[i].height / imgSize.y);
 
-            for (int startX = 0; startX < image[i].width; startX = startX + 20)
+            for (int startX = 0; startX < image[i].width; startX = startX + imgSize.x)
             {
-                for (int startY = 0; startY < image[i].height; startY = startY + 20)
+                for (int startY = 0; startY < image[i].height; startY = startY + imgSize.y)
                 {
 
                     Texture2D newImg = new Texture2D(imgSize.x, imgSize.y, TextureFormat.RGB24, false);
@@ -271,6 +293,9 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         //Use MultiThreading
 
+
+
+
         for (int type = 0; type < procImgs.Count; type++)
         {
 
@@ -317,22 +342,27 @@ public class TrainNeuralNetwork : MonoBehaviour
         //Create a new Neural Network
         NeuralNetwork neuro = new NeuralNetwork(networkSettings.neuralNetSize);
 
+        //int epoch = 0;
+
+
         for (int epoch = 0; epoch < numOfEpochs; epoch++)
         {
-            createLine("Epoch: " + epoch);
+            createLine("Starting Data Shuffle");
+            yield return null;
 
             List<DataPoint> shuffledData = new List<DataPoint>();
 
             int total = allData.Count;
             int count = 0;
 
-            createLine("Starting Data Shuffle");
-            yield return null;
+            System.Random rng = new System.Random();
 
             //Shuffle Data
             for (int i = 0; i < total; i++)
             {
-                int ranIndex = Random.Range(0, allData.Count - 1);
+                int ranIndex = rng.Next(0, allData.Count - 1);
+
+                // int ranIndex = Random.Range(0, allData.Count - 1);
 
                 shuffledData.Add(allData[ranIndex]);
 
@@ -350,13 +380,13 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             allTrainData = shuffledData.ToArray();
 
-            /*
+
             DataPoint[] costData = new DataPoint[allTrainData.Length / costDataDivider];
             for (int i = 0; i < allTrainData.Length / costDataDivider; i++)
             {
                 costData[i] = allTrainData[i];
             }
-            */
+
 
             //Calculate How many batches needed
             int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkSettings.dataPerBatch);
@@ -383,9 +413,13 @@ public class TrainNeuralNetwork : MonoBehaviour
             createLine("Finished Batching");
             yield return null;
 
-            StartCoroutine(displayCost(false, false, neuro, allTrainData));
+            //for (int trainIndex = 0; trainIndex < 2; trainIndex++)
+            //{
+            createLine("Epoch: " + epoch);
 
-            StartCoroutine(displayCost(true, false, neuro, allTrainData));
+            StartCoroutine(displayCost(false, false, neuro, costData));
+
+            StartCoroutine(displayCost(true, false, neuro, costData));
 
             for (int i = 0; i < numOfBatches; i++)
             {
@@ -399,8 +433,9 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                 }
 
+                //
                 //Teach the Neural Network
-                neuro.Learn(batch, networkSettings.learnRate, 0.1, 0.9);
+                neuro.Learn(batch, (1.0 / (1.0 + learnRateDecay * epoch)) * networkSettings.learnRate,0, 0);
 
                 Percent.text = (float)i / numOfBatches * 100 + " % ";
                 PercentSlider.value = (float)i / numOfBatches;
@@ -410,9 +445,9 @@ public class TrainNeuralNetwork : MonoBehaviour
             createLine("Finished Teaching");
             yield return null;
 
-            StartCoroutine(displayCost(false, true, neuro, allTrainData));
+            StartCoroutine(displayCost(false, true, neuro, costData));
 
-            StartCoroutine(displayCost(true, true, neuro, allTrainData));
+            StartCoroutine(displayCost(true, true, neuro, costData));
 
             createLine("Start Testing");
             yield return null;
@@ -436,7 +471,8 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             createLine("Evaluating");
             yield return null;
-            foreach (DataPoint data in testing)
+
+            foreach (DataPoint data in shuffledData)
             {
                 Debug.Log(neuro.Classify(data.inputs) + " : " + data.label);
 
@@ -444,10 +480,11 @@ public class TrainNeuralNetwork : MonoBehaviour
                 {
                     accuracy++;
                 }
-
             }
 
-            float actualAccuracy = (float)accuracy / testing.Count * 100;
+            float actualAccuracy = (float)accuracy / shuffledData.Count * 100;
+
+            StartCoroutine(saveBestNetwork(neuro, actualAccuracy, costData));
 
             createLine("Accuracy: " + actualAccuracy + " %");
             yield return null;
@@ -456,6 +493,8 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             createLine("Time Elapsed Training: " + (trainEnd - trainStart));
             yield return null;
+
+
         }
 
         //Once Finished
@@ -463,16 +502,7 @@ public class TrainNeuralNetwork : MonoBehaviour
         createLine("Total Time elapsed: " + (trainEnd - startTime));
         yield return null;
 
-        var dir = "Assets/Resources/NeuralNetworks/BestNetworks" + "/" + fileName + ".json";
-
-        string jsonData = JsonUtility.ToJson(neuro, true);
-
-        Debug.Log(jsonData);
-
-        File.WriteAllText(dir, jsonData);
-
-        createLine("Finished Saving");
-        yield return null;
+        saveNetwork(neuro, fileName + " Final");
 
         /*
         if (saveBest)
@@ -716,12 +746,13 @@ public class TrainNeuralNetwork : MonoBehaviour
         {
             if (all)
             {
-                createLine("Single Cost Before: " + neuro.Cost(data[0]));
+                createLine("All Cost Before: " + neuro.Cost(data));
                 yield return null;
             }
             else
             {
-                createLine("All Cost Before: " + neuro.Cost(data));
+
+                createLine("Single Cost Before: " + neuro.Cost(data[0]));
                 yield return null;
             }
         }
@@ -753,6 +784,71 @@ public class TrainNeuralNetwork : MonoBehaviour
         str += ", " + size[size.Length - 1] + "]";
 
         return str;
+    }
+
+    public IEnumerator saveBestNetwork(NeuralNetwork network, float accuracy, DataPoint[] allTrainData)
+    {
+        //Save best
+        if (bestNetwork != null)
+        {
+            //Compare for best
+
+            if ((accuracy) >= lastAccuracy)
+            {
+                //In the case they are equal, check for the lowest cost
+                if (accuracy == lastAccuracy)
+                {
+                    double bestCost = bestNetwork.Cost(allTrainData);
+
+                    double currentCost = network.Cost(allTrainData);
+
+                    if (currentCost < bestCost)
+                    {
+                        //Replace Network witht the new one
+                        bestNetwork = network;
+                        createLine("New Best Network Made");
+                        createLine("Accuracy: " + accuracy + " %");
+                        createLine("All Cost: " + currentCost);
+
+                        createLine("Saving New Best");
+                        saveNetwork(bestNetwork, fileName + " (Best)");
+                    }
+                }
+                else
+                {
+                    bestNetwork = network;
+                    lastAccuracy = accuracy;
+
+                    createLine("New Best Network Made");
+                    createLine("Accuracy: " + accuracy + " %");
+
+                    createLine("Saving New Best");
+                    saveNetwork(bestNetwork, fileName + " (Best)");
+
+                }
+
+            }
+        }
+        else
+        {
+            bestNetwork = network;
+            lastAccuracy = accuracy;
+        }
+
+        yield return null;
+    }
+
+    private void saveNetwork(NeuralNetwork neuro, string name)
+    {
+        var dir = "Assets/Resources/NeuralNetworks/BestNetworks" + "/" + name + ".json";
+
+        string jsonData = JsonUtility.ToJson(neuro, true);
+
+        Debug.Log(jsonData);
+
+        File.WriteAllText(dir, jsonData);
+
+        createLine("Saved");
     }
 
 
