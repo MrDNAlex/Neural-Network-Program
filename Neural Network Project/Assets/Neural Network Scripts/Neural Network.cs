@@ -7,8 +7,8 @@ public class NeuralNetwork
 {
 
     public Layer[] layers;
-
     public double inputVal;
+    NetworkLearnData[] batchLearnData;
 
   
     public NeuralNetwork (int[] layerSize)
@@ -26,7 +26,7 @@ public class NeuralNetwork
     }
 
     //Run the entire neural network and get the outputs
-    double[] CalcOutput (double[] inputs)
+    double[] CalculateOutput (double[] inputs)
     {
         foreach (Layer layer in layers)
         {
@@ -38,14 +38,14 @@ public class NeuralNetwork
     //Get the index of the output of the neural network with highest value
     public int Classify (double[] inputs)
     {
-        double[] output = CalcOutput(inputs);
+        double[] output = CalculateOutput(inputs);
 
         return IndexOfMax(output);
     }
 
     public double[] Classify2 (double[] inputs)
     {
-        return CalcOutput(inputs);
+        return CalculateOutput(inputs);
     }
 
 
@@ -66,7 +66,7 @@ public class NeuralNetwork
 
     public double Cost(DataPoint dataPoint)
     {
-        double[] outputs = CalcOutput(dataPoint.inputs);
+        double[] outputs = CalculateOutput(dataPoint.inputs);
         Layer outputLayer = layers[layers.Length - 1];
         double cost = 0;
 
@@ -95,36 +95,71 @@ public class NeuralNetwork
     public void Learn (DataPoint[] trainingBatch, double learnRate, double regularization = 0, double momentum = 0)
     {
 
-        int trainingIndex = 0;
+        // int trainingIndex = 0;
+        if (batchLearnData == null || batchLearnData.Length != trainingBatch.Length)
+        {
+            batchLearnData = new NetworkLearnData[trainingBatch.Length];
+
+            for (int i = 0; i < batchLearnData.Length; i++)
+            {
+                batchLearnData[i] = new NetworkLearnData(layers);
+            }
+        }
+           
 
         System.Threading.Tasks.Parallel.For(0, trainingBatch.Length, (i) =>
         {
-            trainingIndex++;
-            UpdateAllGradients(trainingBatch[i]);
+            // trainingIndex++;
+            UpdateAllGradients(trainingBatch[i], batchLearnData[i]);
         });
 
-        /*
-        foreach (DataPoint dataPoint in trainingBatch)
+        for (int i = 0; i < layers.Length; i++)
         {
-           
-            //Debug.Log(((float)trainingIndex / trainingBatch.Length) + " % Done");
+            layers[i].ApplyGradients(learnRate / trainingBatch.Length, regularization, momentum);
         }
-        */
 
-
-        ApplyAllGradients(learnRate / trainingBatch.Length, regularization, momentum);
 
         //Reset All gradients
 
     }
 
-    void UpdateAllGradients (DataPoint dataPoint)
+    void UpdateAllGradients (DataPoint dataPoint, NetworkLearnData learnData)
     {
         //Backwards Propogation Algorithm
 
-        //Need to get the outputVals
-        CalcOutput(dataPoint.inputs);
+        double[] inputsToNextLayer = dataPoint.inputs;
 
+        for (int i = 0; i <  layers.Length; i ++)
+        {
+            inputsToNextLayer = layers[i].CalcOutput(inputsToNextLayer, learnData.layerData[i]);
+        }
+
+
+        // -- Backpropogation --
+        int outputLayerIndex = layers.Length - 1;
+        Layer outputLayer = layers[outputLayerIndex];
+        LayerLearnData outputLearnData = learnData.layerData[outputLayerIndex];
+
+        //Update output layer gradients
+        outputLayer.CalculateOutputLayerNodeValues(outputLearnData, dataPoint.expectedOutputs);
+        outputLayer.UpdateGradients(outputLearnData);
+
+
+        //Update Hidden layer
+        for (int i = outputLayerIndex - 1; i >= 0; i --)
+        {
+            LayerLearnData layerData = learnData.layerData[i];
+            Layer hiddenLayer = layers[i];
+
+            hiddenLayer.CalculateHiddenNodeValues(layerData, layers[i + 1], learnData.layerData[i + 1].nodeValues);
+            hiddenLayer.UpdateGradients(layerData);
+        }
+
+
+        //Need to get the outputVals
+        // CalculateOutput(dataPoint.inputs);
+
+        /*
         //Update the Final Layers Gradients
         Layer outputLayer = layers[layers.Length - 1];
         double[] nodeValues = outputLayer.CalculateOutputLayerNodeValues(dataPoint.expectedOutputs);
@@ -137,15 +172,8 @@ public class NeuralNetwork
             nodeValues = hiddenLayer.CalculateHiddenNodeValues(layers[hiddenLayerIndex + 1], nodeValues);
             hiddenLayer.UpdateGradients(nodeValues);
         }
+        */
 
-    }
-
-    void ApplyAllGradients (double learnRate, double regularization, double momentum)
-    {
-        for (int i = 0; i < layers.Length; i ++)
-        {
-            layers[i].ApplyGradients(learnRate, regularization, momentum);
-        }
     }
 
 

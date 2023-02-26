@@ -19,15 +19,15 @@ public class ImageProcessing : MonoBehaviour
     public int maxCopies;
     public int minCopies;
 
+    [Range(0, 1)] public double noiseProbability;
+    [Range(0, 1)] public double noiseStrength;
+
     [Header("UI Stuff")]
     [SerializeField] Button StartBTN;
     [SerializeField] Text Log;
     [SerializeField] Text Percent;
     [SerializeField] Slider PercentSlider;
    
-   
-    
-
     // https://en.wikipedia.org/wiki/Rotation_matrix#In_two_dimensions
 
 
@@ -184,7 +184,6 @@ public class ImageProcessing : MonoBehaviour
                         red += image.GetPixel(xIndex * scaleFactor + i, yIndex * scaleFactor + j).r;
                         green += image.GetPixel(xIndex * scaleFactor + i, yIndex * scaleFactor + j).g;
                         blue += image.GetPixel(xIndex * scaleFactor + i, yIndex * scaleFactor + j).b;
-
                     }
                 }
 
@@ -195,9 +194,7 @@ public class ImageProcessing : MonoBehaviour
 
                 newImage.SetPixel(xIndex, yIndex, new Color(red, green, blue));
 
-
             }
-           
         }
 
         //Save Texture as PNG
@@ -208,26 +205,31 @@ public class ImageProcessing : MonoBehaviour
 
     }
 
-
     public Texture2D ApplyNoise (Texture2D image)
     {
         //5% of pixels get noise
 
         Texture2D newImage = image;
 
-        float mult = Random.Range(1, 5);
+        //Number determines the seed to use
+        System.Random rng = new System.Random(Random.Range(0, 100000));
 
-        int num = Mathf.FloorToInt((float)(newImage.width * mult / 5));
-
-        for (int i = 0; i < num; i ++)
+        for (int x = 0; x < image.width; x++)
         {
-            int xPos = Mathf.FloorToInt(Random.Range(0, newImage.width));
-            int yPos = Mathf.FloorToInt(Random.Range(0, newImage.height));
+            for (int y = 0; y < image.height; y++)
+            {
 
-            float col = (float)Random.Range(0, 255) / 255;
+                if (rng.NextDouble() <= noiseProbability)
+                {
+                    double noiseValue = (rng.NextDouble() - 0.5) * noiseStrength;
 
-            newImage.SetPixel(xPos, yPos, new Color(col, col, col));
+                    float pixelVal = newImage.GetPixel(x, y).r;
 
+                    pixelVal = System.Math.Clamp(pixelVal - (float)noiseValue, 0, 1);
+
+                    newImage.SetPixel(x, y, new Color(pixelVal, pixelVal, pixelVal));
+                }
+            }
         }
 
         return newImage;

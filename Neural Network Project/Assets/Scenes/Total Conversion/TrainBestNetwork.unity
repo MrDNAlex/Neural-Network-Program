@@ -888,25 +888,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   networkSize:
-    neuralNetSize: 00040000c800000004000000
-  dataPerBatch: 16
+    neuralNetSize: 00040000f401000007000000
+  dataPerBatch: 32
   learnRates: 0.05
   learnRateDecay: 0.04
+  regularization: 0.1
+  momentum: 0.9
   images:
   - {fileID: 2800000, guid: 2d7bb64b788fcc344b1ccd02887f28ef, type: 3}
+  - {fileID: 2800000, guid: ae7efe8ebc1692c45bf4fd50b51d4063, type: 3}
   - {fileID: 2800000, guid: 2d036b9b8223c5e42bc4238006533d0c, type: 3}
+  - {fileID: 2800000, guid: ab064491e8d8cbb458255716e4da101b, type: 3}
   - {fileID: 2800000, guid: ca202c60f7b08f643838af45120e36ca, type: 3}
+  - {fileID: 2800000, guid: 444a72aa32928eb43b6d3081d48da05f, type: 3}
   - {fileID: 2800000, guid: 2011e5c4da89d1d4a9dbcee7a2be1548, type: 3}
   subImageSize: {x: 32, y: 32}
-  maxCopies: 40
-  minCopies: 35
-  maxAngle: -40
-  minAngle: 40
-  outputNum: 4
-  numOfEpochs: 50
+  maxCopies: 20
+  minCopies: 18
+  maxAngle: 40
+  minAngle: -40
+  noiseProbability: 0.6000000238418579
+  noiseStrength: 0.699999988079071
+  outputNum: 7
+  numOfEpochs: 20
   costDataDivider: 20
+  trainingSplit: 0.8
   exportPath: Assets/Resources/NeuralNetworks/BestNetworks
-  fileName: NewSize
+  errorImagePath: Assets/Resources/ErrorImages
+  fileName: IdkAnymore
+  saveErrorImg: 0
   StartBTN: {fileID: 1770273862}
   Percent: {fileID: 1034079072}
   PercentSlider: {fileID: 1529763200}
