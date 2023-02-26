@@ -40,8 +40,10 @@ public class Layer
 
         weights = new double[nodesIn* nodesOut];
         biases = new double[nodesOut];
+
         costGradientWeights = new double[weights.Length];
         costGradientBias = new double[biases.Length];
+
         weightVolicities = new double[weights.Length];
         biasVelocities = new double[biases.Length];
 
@@ -71,31 +73,24 @@ public class Layer
         this.biases = laySave.biases;
 
         //load weights 
-
         for (int i = 0; i < numNodesIn * numNodesOut; i++)
         {
-          
-            
                 weights[i] = laySave.weights[i];
-            
         }
-
-
     }
 
-
-    //Calculate the output of the layer
-    public double [] CalcOutput (double [] input)
+    public double[] CalcOutput(double[] input)
     {
+
         inputs = input;
 
         double[] activations = new double[numNodesOut];
-        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut ++)
+        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
         {
             double weightInput = biases[nodeOut];
             for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
             {
-               
+
                 weightInput += input[nodeIn] * getWeight(nodeIn, nodeOut);
             }
 
@@ -106,6 +101,41 @@ public class Layer
         this.activations = activations;
 
         return activations;
+
+    }
+
+    //Calculate the output of the layer
+    public double [] CalcOutput (double [] input, LayerLearnData learnData)
+    {
+        learnData.inputs = input;
+
+       // inputs = input;
+
+        //double[] activations = new double[numNodesOut];
+        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut ++)
+        {
+            double weightInput = biases[nodeOut];
+            for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
+            {
+               
+                weightInput += input[nodeIn] * getWeight(nodeIn, nodeOut);
+            }
+
+            learnData.weightedInputs[nodeOut] = weightInput;
+
+           // weightedInputs[nodeOut] = weightInput;
+           // activations[nodeOut] = ActivationFunction(weightInput);
+        }
+
+        //Apply Activation Function 
+        for (int i = 0; i < learnData.activations.Length; i ++)
+        {
+            learnData.activations[i] = ActivationFunction(learnData.weightedInputs, i);
+        }
+
+       // this.activations = activations;
+
+        return learnData.activations;
 
     }
 
@@ -123,9 +153,29 @@ public class Layer
        // return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
 
         //ReLU
-        //return Mathf.Max(0, (float)weightedInput);
+       // return Mathf.Max(0, (float)weightedInput);
         
     }
+
+    double ActivationFunction(double[] weightedInput, int index)
+    {
+        //Sigmoid
+        return 1 / (1 + Mathf.Exp(-(float)weightedInput[index]));
+
+
+        //Hyperbolic tangent
+        // double e2w = Mathf.Exp(2 * (float)weightedInput);
+        // return (e2w - 1) / (e2w + 1);
+
+        //SiLU
+        // return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
+
+        //ReLU
+        //return Mathf.Max(0, (float)weightedInput[index]);
+
+    }
+
+
 
     public double NodeCost (double outputVal, double expectedVal)
     {
@@ -223,10 +273,20 @@ public class Layer
     {
         //Sigmoid
         double activationVal = ActivationFunction(weightedVal);
+       return activationVal * (1 - activationVal);
+
+        //ReLU
+     //   return (weightedVal > 0) ? 1 : 0;
+    }
+
+    public double ActivationDerivative(double[] weightedVal, int index)
+    {
+        //Sigmoid
+        double activationVal = ActivationFunction(weightedVal[index]);
         return activationVal * (1 - activationVal);
 
         //ReLU
-        //return (weightedVal > 0) ? 1 : 0;
+        //return (weightedVal[index] > 0) ? 1 : 0;
     }
 
     public double weightedValDerivative ()
@@ -246,6 +306,20 @@ public class Layer
             double costDerivative = nodeCostDerivative(activations[i], expectedOutputs[i]);
             double activationDerivative = ActivationDerivative(weightedInputs[i]);
             nodeVals[i] = costDerivative * activationDerivative;
+        }
+        return nodeVals;
+    }
+
+    //Seb Lague
+    public double[] CalculateOutputLayerNodeValues(LayerLearnData layerData, double[] expectedOutputs)
+    {
+        double[] nodeVals = new double[expectedOutputs.Length];
+        for (int i = 0; i < nodeVals.Length; i++)
+        {
+
+            double costDerivative = nodeCostDerivative(layerData.activations[i], expectedOutputs[i]);
+            double activationDerivative = ActivationDerivative(layerData.weightedInputs, i);
+            layerData.nodeValues[i] = costDerivative * activationDerivative;
         }
         return nodeVals;
     }
@@ -271,6 +345,25 @@ public class Layer
 
     }
 
+    //Seb Lague
+    public void CalculateHiddenNodeValues(LayerLearnData learnData, Layer oldLayer, double[] oldNodeVals)
+    {
+
+        for (int newNodeIndex = 0; newNodeIndex < numNodesOut; newNodeIndex++)
+        {
+            double newNodeVal = 0;
+            for (int oldNodeIndex = 0; oldNodeIndex < oldNodeVals.Length; oldNodeIndex++)
+            {
+                double weightedInputDeriv = oldLayer.getWeight(newNodeIndex, oldNodeIndex);
+                newNodeVal += weightedInputDeriv * oldNodeVals[oldNodeIndex];
+            }
+
+            newNodeVal *= ActivationDerivative(learnData.weightedInputs, newNodeIndex);
+            learnData.nodeValues[newNodeIndex] = newNodeVal;
+        }
+    }
+
+
     public void UpdateGradients (double[] nodeVals)
     {
        
@@ -291,6 +384,40 @@ public class Layer
 
     }
 
+    //Seb Lague
+    public void UpdateGradients(LayerLearnData layerData)
+    {
+
+        //Update Weights (lock for multithreading)
+        
+        lock (costGradientWeights)
+        {
+            for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
+            {
+                double nodeVal = layerData.nodeValues[nodeOut];
+                for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
+                {
+                    double derivativeCostWRTWeight = layerData.inputs[nodeIn] * nodeVal;
+
+                    costGradientWeights[getFlatWeightIndex(nodeIn, nodeOut)] += derivativeCostWRTWeight;
+
+                }
+            }
+        }
+
+        //Update cost gradient Bias (lock for multithreading)
+        lock (costGradientBias)
+        {
+
+            for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
+            {
+                double derivativeCostWRTBias = 1 * layerData.nodeValues[nodeOut];
+                costGradientBias[nodeOut] += derivativeCostWRTBias;
+            }
+        }
+
+    }
+
     public double getWeight (int nodeIn, int nodeOut)
     {
 
@@ -304,18 +431,6 @@ public class Layer
         return outputNeurIndex * numNodesIn + inputNeurIndex;
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

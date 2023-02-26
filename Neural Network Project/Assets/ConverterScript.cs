@@ -53,9 +53,9 @@ public class ConverterScript : MonoBehaviour
         Log.text = "";
         Log.text += "Start";
 
-        for (int startX = 0; startX < image.width; startX = startX + 20)
+        for (int startX = 0; startX < image.width; startX = startX + imgSize.x)
         {
-            for (int startY = 0; startY < image.height; startY = startY + 20)
+            for (int startY = 0; startY < image.height; startY = startY + imgSize.y)
             {
                 bool saveImg = false;
 

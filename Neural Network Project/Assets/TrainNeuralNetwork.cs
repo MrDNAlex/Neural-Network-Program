@@ -12,6 +12,8 @@ public class TrainNeuralNetwork : MonoBehaviour
     [SerializeField] int dataPerBatch;
     [SerializeField] float learnRates;
     [SerializeField] float learnRateDecay;
+    [SerializeField] float regularization;
+    [SerializeField] float momentum;
 
     NetworkTrainingInfo networkSettings;
 
@@ -27,6 +29,8 @@ public class TrainNeuralNetwork : MonoBehaviour
     [SerializeField] int minCopies;
     [SerializeField] int maxAngle;
     [SerializeField] int minAngle;
+    [Range(0, 1)] public double noiseProbability;
+    [Range(0, 1)] public double noiseStrength;
 
     List<List<Texture2D>> processedImages = new List<List<Texture2D>>();
 
@@ -37,13 +41,19 @@ public class TrainNeuralNetwork : MonoBehaviour
 
     [Header("Train Network")]
     [SerializeField] int numOfEpochs;
-    [SerializeField] int costDataDivider;
+    [SerializeField] int costDataDivider; //Remove this?
+    [Range(0, 1)] public float trainingSplit;
     //From Asset Folder
     [SerializeField] string exportPath;
+    [SerializeField] string errorImagePath;
     [SerializeField] string fileName;
 
+    [SerializeField] bool saveErrorImg;
+
     DataPoint[] allTrainData;
-    DataPoint[,] feedingData;
+    Batch[] batches;
+    DataPoint[] evaluateData;
+    //DataPoint[,] feedingData;
     NeuralNetwork bestNetwork;
     float lastAccuracy;
 
@@ -66,16 +76,9 @@ public class TrainNeuralNetwork : MonoBehaviour
     //string messageLog = "";
     MessageLog messageLog = new MessageLog();
 
-    
 
-
-
-    //Feb 23 Implement following features
-
-    //Save the neural Network to the file every time the accuracy increases
-    //Remake all the numbers at higher resolution (32x32) for now to see if the images were just too small
-
-
+    //Feb 24
+    //Add scaling to image processing
 
 
 
@@ -89,7 +92,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         StartBTN.onClick.AddListener(nextStep);
 
-        OnDemandRendering.renderFrameInterval = 4;
+        //OnDemandRendering.renderFrameInterval = 4;
     }
 
     // Update is called once per frame
@@ -153,11 +156,11 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             int imgNum = 0;
 
-            Debug.Log(image[i].width);
-            Debug.Log(image[i].height);
+            //Debug.Log(image[i].width);
+            //  Debug.Log(image[i].height);
 
-            Debug.Log(imgSize.x);
-            Debug.Log(imgSize.y);
+            //  Debug.Log(imgSize.x);
+            //   Debug.Log(imgSize.y);
 
             int totalNum = (image[i].width / imgSize.x) * (image[i].height / imgSize.y);
 
@@ -342,157 +345,120 @@ public class TrainNeuralNetwork : MonoBehaviour
         //Create a new Neural Network
         NeuralNetwork neuro = new NeuralNetwork(networkSettings.neuralNetSize);
 
-        //int epoch = 0;
+        createLine("Starting Data Shuffle");
+        yield return null;
 
+        List<DataPoint> shuffledData = new List<DataPoint>();
+
+        int total = allData.Count;
+        int count = 0;
+
+        System.Random rng = new System.Random();
+
+        yield return StartCoroutine(ShuffleArray(allData));
+
+        shuffledData = allData;
+
+        /*
+        //Shuffle Data
+        for (int i = 0; i < total; i++)
+        {
+            int ranIndex = rng.Next(0, allData.Count - 1);
+
+            // int ranIndex = Random.Range(0, allData.Count - 1);
+
+            shuffledData.Add(allData[ranIndex]);
+
+            allData.RemoveAt(ranIndex);
+
+            count++;
+
+            Percent.text = (float)count / total * 100 + " % ";
+            PercentSlider.value = (float)count / total;
+            yield return null;
+
+        }
+        */
+
+        //Split up the data into the accuracy/Testing group and the training data
+        int accuracyIndex = Mathf.FloorToInt(shuffledData.Count * trainingSplit);
+
+        //Put data in training section
+        allTrainData = new DataPoint[accuracyIndex];
+        for (int i = 0; i < accuracyIndex; i++)
+        {
+            allTrainData[i] = shuffledData[i];
+        }
+
+        //Get data for evaluating
+        evaluateData = new DataPoint[shuffledData.Count - accuracyIndex];
+        for (int i = 0; i < evaluateData.Length; i++)
+        {
+            evaluateData[i] = shuffledData[(allTrainData.Length) + i];
+        }
+
+        //Make batches
+        //Calculate How many batches needed
+        int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkSettings.dataPerBatch);
+
+        createLine("Starting Batching");
+        yield return null;
+
+        batches = new Batch[numOfBatches];
+
+        for (int i = 0; i < batches.Length; i++)
+        {
+            batches[i] = new Batch(networkSettings.dataPerBatch);
+
+            for (int j = 0; j < networkSettings.dataPerBatch; j++)
+            {
+                batches[i].addData(allTrainData[networkSettings.dataPerBatch * i + j], j);
+            }
+
+            Percent.text = (float)i / numOfBatches * 100 + " % ";
+            PercentSlider.value = (float)i / numOfBatches;
+            yield return null;
+        }
+
+        createLine("Finished Batching");
+        yield return null;
 
         for (int epoch = 0; epoch < numOfEpochs; epoch++)
         {
-            createLine("Starting Data Shuffle");
-            yield return null;
 
-            List<DataPoint> shuffledData = new List<DataPoint>();
-
-            int total = allData.Count;
-            int count = 0;
-
-            System.Random rng = new System.Random();
-
-            //Shuffle Data
-            for (int i = 0; i < total; i++)
-            {
-                int ranIndex = rng.Next(0, allData.Count - 1);
-
-                // int ranIndex = Random.Range(0, allData.Count - 1);
-
-                shuffledData.Add(allData[ranIndex]);
-
-                allData.RemoveAt(ranIndex);
-
-                count++;
-
-                Percent.text = (float)count / total * 100 + " % ";
-                PercentSlider.value = (float)count / total;
-                yield return null;
-
-            }
-
-            allData = shuffledData;
-
-            allTrainData = shuffledData.ToArray();
-
-
-            DataPoint[] costData = new DataPoint[allTrainData.Length / costDataDivider];
-            for (int i = 0; i < allTrainData.Length / costDataDivider; i++)
-            {
-                costData[i] = allTrainData[i];
-            }
-
-
-            //Calculate How many batches needed
-            int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkSettings.dataPerBatch);
-
-            feedingData = new DataPoint[numOfBatches, networkSettings.dataPerBatch];
-
-            createLine("Starting Batching");
-            yield return null;
-
-            for (int i = 0; i < numOfBatches; i++)
-            {
-                for (int j = 0; j < networkSettings.dataPerBatch; j++)
-                {
-                    feedingData[i, j] = allTrainData[networkSettings.dataPerBatch * i + j];
-
-                }
-
-                Percent.text = (float)i / numOfBatches * 100 + " % ";
-                PercentSlider.value = (float)i / numOfBatches;
-                yield return null;
-
-            }
-
-            createLine("Finished Batching");
-            yield return null;
-
-            //for (int trainIndex = 0; trainIndex < 2; trainIndex++)
-            //{
             createLine("Epoch: " + epoch);
 
-            StartCoroutine(displayCost(false, false, neuro, costData));
+            //Shuffle Batches
+            yield return StartCoroutine(ShuffleArray(batches));
 
-            StartCoroutine(displayCost(true, false, neuro, costData));
+            // StartCoroutine(displayCost(false, false, neuro, evaluateData));
 
-            for (int i = 0; i < numOfBatches; i++)
+            //StartCoroutine(displayCost(true, false, neuro, evaluateData));
+
+            //Teaching
+            for (int i = 0; i < batches.Length; i++)
             {
+                neuro.Learn(batches[i].data, (1.0 / (1.0 + learnRateDecay * epoch)) * networkSettings.learnRate, regularization, momentum);
 
-                DataPoint[] batch = new DataPoint[networkSettings.dataPerBatch];
-
-                for (int j = 0; j < networkSettings.dataPerBatch; j++)
-                {
-
-                    batch[j] = feedingData[i, j];
-
-                }
-
-                //
-                //Teach the Neural Network
-                neuro.Learn(batch, (1.0 / (1.0 + learnRateDecay * epoch)) * networkSettings.learnRate,0, 0);
-
-                Percent.text = (float)i / numOfBatches * 100 + " % ";
+                Percent.text = "Teaching: " + (float)i / numOfBatches * 100 + " % ";
                 PercentSlider.value = (float)i / numOfBatches;
                 yield return null;
             }
 
-            createLine("Finished Teaching");
-            yield return null;
+            //  StartCoroutine(displayCost(false, true, neuro, evaluateData));
 
-            StartCoroutine(displayCost(false, true, neuro, costData));
+            yield return StartCoroutine(displayCost(true, true, neuro, evaluateData));
 
-            StartCoroutine(displayCost(true, true, neuro, costData));
+            yield return StartCoroutine(EvaluateNetwork(neuro, evaluateData));
 
-            createLine("Start Testing");
-            yield return null;
 
-            List<DataPoint> testing = new List<DataPoint>();
 
-            createLine("Creating Testing Data");
-            yield return null;
-
-            for (int i = 0; i < processedImages.Count; i++)
-            {
-                for (int j = 0; j < networkSettings.dataPerBatch; j++)
-                {
-
-                    testing.Add(imageToData(processedImages[i][j], i, networkSettings.neuralNetSize[networkSettings.neuralNetSize.Length - 1]));
-
-                }
-            }
-
-            int accuracy = 0;
-
-            createLine("Evaluating");
-            yield return null;
-
-            foreach (DataPoint data in shuffledData)
-            {
-                Debug.Log(neuro.Classify(data.inputs) + " : " + data.label);
-
-                if (neuro.Classify(data.inputs) == data.label)
-                {
-                    accuracy++;
-                }
-            }
-
-            float actualAccuracy = (float)accuracy / shuffledData.Count * 100;
-
-            StartCoroutine(saveBestNetwork(neuro, actualAccuracy, costData));
-
-            createLine("Accuracy: " + actualAccuracy + " %");
-            yield return null;
-
+            /*
             trainEnd = System.DateTime.UtcNow;
 
             createLine("Time Elapsed Training: " + (trainEnd - trainStart));
             yield return null;
+            */
 
 
         }
@@ -669,6 +635,32 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         Texture2D newImage = image;
 
+        //Number determines the seed to use
+        System.Random rng = new System.Random(Random.Range(0, 100000));
+
+        for (int x = 0; x < image.width; x++)
+        {
+            for (int y = 0; y < image.height; y++)
+            {
+
+                if (rng.NextDouble() <= noiseProbability)
+                {
+                    double noiseValue = (rng.NextDouble() - 0.5) * noiseStrength;
+
+                    float pixelVal = newImage.GetPixel(x, y).r;
+
+                    pixelVal = System.Math.Clamp(pixelVal - (float)noiseValue, 0, 1);
+
+                    newImage.SetPixel(x, y, new Color(pixelVal, pixelVal, pixelVal));
+                }
+            }
+        }
+
+
+        /*
+
+        Texture2D newImage = image;
+
         float mult = Random.Range(1, 5);
 
         int num = Mathf.FloorToInt((float)(newImage.width * mult / 5));
@@ -683,6 +675,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             newImage.SetPixel(xPos, yPos, new Color(col, col, col));
 
         }
+        */
 
         return newImage;
     }
@@ -807,10 +800,7 @@ public class TrainNeuralNetwork : MonoBehaviour
                         //Replace Network witht the new one
                         bestNetwork = network;
                         createLine("New Best Network Made");
-                        createLine("Accuracy: " + accuracy + " %");
-                        createLine("All Cost: " + currentCost);
-
-                        createLine("Saving New Best");
+                       
                         saveNetwork(bestNetwork, fileName + " (Best)");
                     }
                 }
@@ -820,9 +810,7 @@ public class TrainNeuralNetwork : MonoBehaviour
                     lastAccuracy = accuracy;
 
                     createLine("New Best Network Made");
-                    createLine("Accuracy: " + accuracy + " %");
-
-                    createLine("Saving New Best");
+                   
                     saveNetwork(bestNetwork, fileName + " (Best)");
 
                 }
@@ -850,6 +838,116 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         createLine("Saved");
     }
+
+    public IEnumerator ShuffleArray(List<DataPoint> data)
+    {
+        int elementsRemainingToShuffle = data.Count;
+        int randomIndex = 0;
+        System.Random prng = new System.Random();
+
+        while (elementsRemainingToShuffle > 1)
+        {
+            // Choose a random element from array
+            randomIndex = prng.Next(0, elementsRemainingToShuffle);
+            DataPoint chosenElement = data[randomIndex];
+
+            // Swap the randomly chosen element with the last unshuffled element in the array
+            elementsRemainingToShuffle--;
+            data[randomIndex] = data[elementsRemainingToShuffle];
+            data[elementsRemainingToShuffle] = chosenElement;
+
+            Percent.text = "Shuffling Data: " + (float)(data.Count - elementsRemainingToShuffle) / data.Count * 100 + " % ";
+            PercentSlider.value = (float)(data.Count - elementsRemainingToShuffle) / data.Count;
+            yield return null;
+        }
+    }
+
+    public IEnumerator ShuffleArray(Batch[] data)
+    {
+        int elementsRemainingToShuffle = data.Length;
+        int randomIndex = 0;
+        System.Random prng = new System.Random();
+
+        while (elementsRemainingToShuffle > 1)
+        {
+            // Choose a random element from array
+            randomIndex = prng.Next(0, elementsRemainingToShuffle);
+            Batch chosenElement = data[randomIndex];
+
+            // Swap the randomly chosen element with the last unshuffled element in the array
+            elementsRemainingToShuffle--;
+            data[randomIndex] = data[elementsRemainingToShuffle];
+            data[elementsRemainingToShuffle] = chosenElement;
+
+            Percent.text = "Shuffling Batches: " + (float)(data.Length - elementsRemainingToShuffle) / data.Length * 100 + " % ";
+            PercentSlider.value = (float)(data.Length - elementsRemainingToShuffle) / data.Length;
+            yield return null;
+        }
+    }
+
+    public void dataToImage(DataPoint data, string name, string path, int imgCount)
+    {
+        //Gte Image size
+        //Create texture2D 
+
+        Texture2D img = new Texture2D(subImageSize.x, subImageSize.y);
+
+        for (int x = 0; x < img.width; x++)
+        {
+            for (int y = 0; y < img.height; y++)
+            {
+                //Get input index
+                //Create color
+                float colVal = (float)data.inputs[x * img.height + y];
+
+                Color col = new Color(colVal, colVal, colVal);
+
+                img.SetPixel(x, y, col);
+            }
+        }
+
+        if (saveErrorImg)
+        {
+            //Save image
+            byte[] bytes = img.EncodeToPNG();
+            File.WriteAllBytes(path + "/" + name + " - " + imgCount + ".png", bytes);
+        }
+    }
+
+    public IEnumerator EvaluateNetwork(NeuralNetwork neuro, DataPoint[] data)
+    {
+        int accuracy = 0;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            int classify = neuro.Classify(data[i].inputs);
+            int label = data[i].label;
+
+            Debug.Log(classify + " : " + label);
+
+            if (classify == label)
+            {
+                accuracy++;
+            }
+            else
+            {
+                dataToImage(data[i], classify.ToString(), errorImagePath, i);
+            }
+            Percent.text = "Evaluating: " + (float)i / data.Length * 100 + " % ";
+            PercentSlider.value = (float)i / data.Length;
+            yield return null;
+        }
+
+
+        float actualAccuracy = (float)accuracy / data.Length * 100;
+
+        createLine("Accuracy: " + actualAccuracy + " %");
+        yield return null;
+
+        yield return StartCoroutine(saveBestNetwork(neuro, actualAccuracy, data));
+    }
+
+
 
 
 }

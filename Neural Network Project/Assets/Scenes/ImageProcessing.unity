@@ -1606,10 +1606,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc7116f2bb83c4b46a031200d16e78f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  importPath: Six
-  exportPath: Assets/Resources/Images/Export/TestingDataSix
+  importPath: 32Pix/Six
+  exportPath: Assets/Resources/32Pix/NewSix
   maxCopies: 5
   minCopies: 2
+  noiseProbability: 0.699999988079071
+  noiseStrength: 0.800000011920929
   StartBTN: {fileID: 732040139}
   Log: {fileID: 1266576095}
   Percent: {fileID: 1252151494}
