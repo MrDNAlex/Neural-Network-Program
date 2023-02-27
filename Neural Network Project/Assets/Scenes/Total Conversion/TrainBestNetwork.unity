@@ -888,12 +888,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   networkSize:
-
-    neuralNetSize: 00040000c800000007000000
-
+    neuralNetSize: 00040000f401000007000000
   dataPerBatch: 32
   learnRates: 0.05
-  learnRateDecay: 0.04
+  learnRateDecay: 0.05
   regularization: 0.1
   momentum: 0.9
   images:
@@ -904,22 +902,21 @@ MonoBehaviour:
   - {fileID: 2800000, guid: ca202c60f7b08f643838af45120e36ca, type: 3}
   - {fileID: 2800000, guid: 444a72aa32928eb43b6d3081d48da05f, type: 3}
   - {fileID: 2800000, guid: 2011e5c4da89d1d4a9dbcee7a2be1548, type: 3}
-
-  maxCopies: 200
-  minCopies: 190
-  maxAngle: -40
-  minAngle: 40
+  subImageSize: {x: 32, y: 32}
+  maxCopies: 40
+  minCopies: 40
+  maxAngle: 30
+  minAngle: -30
+  noiseProbability: 0.699999988079071
+  noiseStrength: 0.800000011920929
   outputNum: 7
   numOfEpochs: 50
-
   costDataDivider: 20
   trainingSplit: 0.8
-  exportPath: Assets/Resources/NeuralNetworks/BestNetworks
-
+  exportPath: Assets/Resources/NeuralNetworks
   errorImagePath: Assets/Resources/ErrorImages
-  fileName: IdkAnymore
+  fileName: NewTry3
   saveErrorImg: 0
-
   StartBTN: {fileID: 1770273862}
   Percent: {fileID: 1034079072}
   PercentSlider: {fileID: 1529763200}
