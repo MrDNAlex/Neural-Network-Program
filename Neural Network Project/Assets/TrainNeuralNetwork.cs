@@ -22,7 +22,7 @@ public class TrainNeuralNetwork : MonoBehaviour
     [SerializeField] List<Texture2D> images = new List<Texture2D>();
     [SerializeField] Vector2Int subImageSize;
 
-    List<List<Texture2D>> miniImages = new List<List<Texture2D>>();
+    List<List<Texture2D>> miniImages = new List<List<Texture2D>>(); //MiniImages need to be cleared
 
     [Header("Image Processing")]
     [SerializeField] int maxCopies;
@@ -32,17 +32,18 @@ public class TrainNeuralNetwork : MonoBehaviour
     [Range(0, 1)] public double noiseProbability;
     [Range(0, 1)] public double noiseStrength;
 
-    List<List<Texture2D>> processedImages = new List<List<Texture2D>>();
+    List<List<Texture2D>> processedImages = new List<List<Texture2D>>(); //Processed Images need to be cleared
 
     [Header("Image To Data")]
-    List<DataPoint> allData = new List<DataPoint>();
+    List<DataPoint> allData = new List<DataPoint>(); //Will need to be cleared (I think)
     [SerializeField] int outputNum;
 
 
     [Header("Train Network")]
+    [SerializeField] int reshuffleIndex;
     [SerializeField] int numOfEpochs;
-    [SerializeField] int costDataDivider; //Remove this?
     [Range(0, 1)] public float trainingSplit;
+
     //From Asset Folder
     [SerializeField] string exportPath;
     [SerializeField] string errorImagePath;
@@ -77,16 +78,15 @@ public class TrainNeuralNetwork : MonoBehaviour
     MessageLog messageLog = new MessageLog();
 
 
-    //Feb 24
-    //Add scaling to image processing
-
-
+    //Feb 27
+   //Create something that saves all the images created during image processing into a folder with the associated label (Do it at data step), if something is going wrong, it's possible we are just feeding garbage
+   //Recheck the bias equations? There might be an error somewhere in there
+   //Add probability thresholds for scaling, angle, offset and noise, that way it's not guranteed to have a mix of all of it, that could be confusing it
 
     // Start is called before the first frame update
     void Start()
     {
         //Create network settings
-
 
         networkSettings = new NetworkTrainingInfo(networkSize.neuralNetSize, learnRates, dataPerBatch);
 
@@ -112,27 +112,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             StartCoroutine(createSubImages(images, subImageSize, miniImages));
             finished = false;
         }
-        /*
-        switch (step)
-        {
-            case 0:
-               
-                break;
-            case 1:
-               
-
-                break;
-            case 2:
-                
-
-                break;
-            case 3:
-               
-                break;
-        }
-
-        step++;
-        */
+       
     }
 
     //
@@ -207,9 +187,46 @@ public class TrainNeuralNetwork : MonoBehaviour
         //
         //Test for best network settings
         //
-        StartCoroutine(createVersions(miniImages, processedImages));
+        StartCoroutine(splitData(miniImages, trainingSplit));
+
+       
 
     }
+
+    public IEnumerator splitData (List<List<Texture2D>> images, float splitRatio)
+    {
+        //Get the index for the split ratio
+
+        //Convert to data points, add to evaluate data
+
+        createLine("Splitting Data");
+
+        List<DataPoint> evalData = new List<DataPoint>();
+
+        int index = Mathf.FloorToInt(images[0].Count * splitRatio);
+
+        int length = images[0].Count - index;
+
+        for (int i = 0; i < images.Count; i ++)
+        {
+            for (int j = index; j < images[i].Count; j ++)
+            {
+                //Convert to data and add to List
+                evalData.Add(imageToData(images[i][j], i, outputNum));
+                images[i].RemoveAt(j);
+            }
+          
+        }
+
+        //Convert to Array 
+        evaluateData = evalData.ToArray();
+        yield return null;
+
+        createLine("Finished Splitting Data");
+
+        StartCoroutine(createVersions(miniImages, processedImages));
+    }
+
 
     //
     //Image Processing
@@ -226,6 +243,8 @@ public class TrainNeuralNetwork : MonoBehaviour
         //Use MultiThreading
         for (int imgType = 0; imgType < inputImages.Count; imgType++)
         {
+
+            System.Random rng = new System.Random(Random.Range(0, 1000));
 
             createdImages.Add(new List<Texture2D>());
 
@@ -247,10 +266,32 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                     float angle = Random.Range(minAngle, maxAngle);
 
+
+                    double scale = rng.NextDouble() + 0.5;
+
+                    double offsetLike = rng.NextDouble();
+
+                   
+
+
+                    //Apply Scale (0.5 - 1.5)
+                    newImage = ApplyScale(newImage, (float)scale);
+
+                    if (offsetLike >= 0.5)
+                    {
+                        //Generate offsetNumbers
+                        int offsetX = Mathf.FloorToInt((float)rng.NextDouble() * (newImage.width / 3));
+                        int offsetY = Mathf.FloorToInt((float)rng.NextDouble() * (newImage.height / 3));
+
+                        //Apply Offset (max 1/3 width and height)
+                        newImage = ApplyOffset(newImage, offsetX, offsetY);
+                    }
+
+                    //Apply Rotation
                     newImage = ApplyRotation(newImage, angle);
 
+                    //Apply Noise
                     newImage = ApplyNoise(newImage);
-
 
                     createdImages[imgType].Add(newImage);
 
@@ -259,7 +300,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                 }
 
-                Percent.text = "\n" + (float)j / imgs.Count * 100 + " % ";
+                Percent.text = "Image Processing " + imgType + ": " + (float)j / imgs.Count * 100 + " % ";
                 PercentSlider.value = (float)j / imgs.Count;
                 yield return null;
 
@@ -277,6 +318,8 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         createLine("Time Elapsed Processing Images: " + (versionEnd - versionStart));
         yield return null;
+
+        miniImages = new List<List<Texture2D>>();
 
         StartCoroutine(createData(createdImages, allData));
 
@@ -296,9 +339,6 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         //Use MultiThreading
 
-
-
-
         for (int type = 0; type < procImgs.Count; type++)
         {
 
@@ -306,7 +346,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             {
                 allData.Add(imageToData(procImgs[type][i], type, outputNum));
 
-                Percent.text = (float)i / procImgs[type].Count * 100 + " % ";
+                Percent.text = "Data Conversion " + type + ": " + (float)i / procImgs[type].Count * 100 + " % ";
                 PercentSlider.value = (float)i / procImgs[type].Count;
                 yield return null;
             }
@@ -323,6 +363,8 @@ public class TrainNeuralNetwork : MonoBehaviour
         createLine("Time Elapsed Converting to Data: " + (dataEnd - dataStart));
         yield return null;
 
+        processedImages = new List<List<Texture2D>>();
+
         StartCoroutine(trainNetwork());
 
     }
@@ -330,7 +372,6 @@ public class TrainNeuralNetwork : MonoBehaviour
     //
     //Train Network
     //
-
     public IEnumerator trainNetwork()
     {
         System.DateTime trainStart = System.DateTime.UtcNow;
@@ -348,41 +389,34 @@ public class TrainNeuralNetwork : MonoBehaviour
         createLine("Starting Data Shuffle");
         yield return null;
 
-        List<DataPoint> shuffledData = new List<DataPoint>();
-
         int total = allData.Count;
         int count = 0;
 
         System.Random rng = new System.Random();
 
-        yield return StartCoroutine(ShuffleArray(allData));
+        /*
+               //Shuffle Data
+               for (int i = 0; i < total; i++)
+               {
+                   int ranIndex = rng.Next(0, allData.Count - 1);
 
-        shuffledData = allData;
+                   // int ranIndex = Random.Range(0, allData.Count - 1);
+
+                   shuffledData.Add(allData[ranIndex]);
+
+                   allData.RemoveAt(ranIndex);
+
+                   count++;
+
+                   Percent.text = (float)count / total * 100 + " % ";
+                   PercentSlider.value = (float)count / total;
+                   yield return null;
+
+               }
+               */
+
 
         /*
-        //Shuffle Data
-        for (int i = 0; i < total; i++)
-        {
-            int ranIndex = rng.Next(0, allData.Count - 1);
-
-            // int ranIndex = Random.Range(0, allData.Count - 1);
-
-            shuffledData.Add(allData[ranIndex]);
-
-            allData.RemoveAt(ranIndex);
-
-            count++;
-
-            Percent.text = (float)count / total * 100 + " % ";
-            PercentSlider.value = (float)count / total;
-            yield return null;
-
-        }
-        */
-
-        //Split up the data into the accuracy/Testing group and the training data
-        int accuracyIndex = Mathf.FloorToInt(shuffledData.Count * trainingSplit);
-
         //Put data in training section
         allTrainData = new DataPoint[accuracyIndex];
         for (int i = 0; i < accuracyIndex; i++)
@@ -396,35 +430,52 @@ public class TrainNeuralNetwork : MonoBehaviour
         {
             evaluateData[i] = shuffledData[(allTrainData.Length) + i];
         }
+        */
 
-        //Make batches
-        //Calculate How many batches needed
-        int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkSettings.dataPerBatch);
-
-        createLine("Starting Batching");
-        yield return null;
-
-        batches = new Batch[numOfBatches];
-
-        for (int i = 0; i < batches.Length; i++)
-        {
-            batches[i] = new Batch(networkSettings.dataPerBatch);
-
-            for (int j = 0; j < networkSettings.dataPerBatch; j++)
-            {
-                batches[i].addData(allTrainData[networkSettings.dataPerBatch * i + j], j);
-            }
-
-            Percent.text = (float)i / numOfBatches * 100 + " % ";
-            PercentSlider.value = (float)i / numOfBatches;
-            yield return null;
-        }
-
-        createLine("Finished Batching");
-        yield return null;
+        List<DataPoint> shuffledData;
+        int numOfBatches = 0;
 
         for (int epoch = 0; epoch < numOfEpochs; epoch++)
         {
+
+
+            if (epoch % reshuffleIndex == 0)
+            {
+
+                yield return StartCoroutine(ShuffleArray(allData));
+
+                yield return StartCoroutine(ShuffleArray(evaluateData));
+
+                shuffledData = allData;
+
+                allTrainData = shuffledData.ToArray();
+
+                //Make batches
+                //Calculate How many batches needed
+                numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkSettings.dataPerBatch);
+
+                createLine("Starting Batching");
+                yield return null;
+
+                batches = new Batch[numOfBatches];
+
+                for (int i = 0; i < batches.Length; i++)
+                {
+                    batches[i] = new Batch(networkSettings.dataPerBatch);
+
+                    for (int j = 0; j < networkSettings.dataPerBatch; j++)
+                    {
+                        batches[i].addData(allTrainData[networkSettings.dataPerBatch * i + j], j);
+                    }
+
+                    Percent.text = (float)i / numOfBatches * 100 + " % ";
+                    PercentSlider.value = (float)i / numOfBatches;
+                    yield return null;
+                }
+
+                createLine("Finished Batching");
+                yield return null;
+            }
 
             createLine("Epoch: " + epoch);
 
@@ -494,9 +545,6 @@ public class TrainNeuralNetwork : MonoBehaviour
     }
 
 
-
-
-
     //
     //
     //Image Processing Shit
@@ -507,14 +555,14 @@ public class TrainNeuralNetwork : MonoBehaviour
         //Create a copy image of expanded dimensions
 
 
-        Debug.Log(image.width);
-        Debug.Log(image.width);
+       // Debug.Log(image.width);
+      //  Debug.Log(image.width);
 
         Texture2D newImage = new Texture2D(image.width * scaleFactor, image.height * scaleFactor);
 
 
-        Debug.Log(newImage.width);
-        Debug.Log(newImage.width);
+      //  Debug.Log(newImage.width);
+      //  Debug.Log(newImage.width);
 
         for (int xIndex = 0; xIndex < newImage.width; xIndex++)
         {
@@ -677,6 +725,82 @@ public class TrainNeuralNetwork : MonoBehaviour
         }
         */
 
+        return newImage;
+    }
+
+    public Texture2D ApplyOffset(Texture2D image, int offsetX, int offsetY)
+    {
+        Texture2D newImage = new Texture2D(image.width, image.height);
+
+        for (int xIndex = 0; xIndex < newImage.width; xIndex++)
+        {
+            for (int yIndex = 0; yIndex < newImage.height; yIndex++)
+            {
+
+                //Set pixel to the pixel value of the negative offset
+
+                Color col;
+
+                int posX = xIndex - offsetX;
+                int posY = yIndex - offsetY;
+
+                bool valid = false;
+
+                if (posX >= 0 && posX <= newImage.width)
+                {
+                    if (posY >= 0 && posY <= newImage.width)
+                    {
+                        valid = true;
+                    }
+                }
+
+                if (valid)
+                {
+                    col = image.GetPixel(posX, posY);
+                }
+                else
+                {
+                    col = Color.white;
+                }
+
+                newImage.SetPixel(xIndex, yIndex, col);
+
+            }
+        }
+        return newImage;
+
+
+    }
+
+    public Texture2D ApplyScale(Texture2D image, float scaleMult)
+    {
+        Texture2D newImage = new Texture2D(image.width, image.height);
+
+        for (int xIndex = 0; xIndex < newImage.width; xIndex++)
+        {
+            for (int yIndex = 0; yIndex < newImage.height; yIndex++)
+            {
+                int xCenter = Mathf.FloorToInt(image.width / 2);
+                int yCenter = Mathf.FloorToInt(image.height / 2);
+
+                int translatedX = xIndex - xCenter;
+                int translatedY = yIndex - yCenter;
+
+                //Get radius
+                //Divide by multiplier
+                float oldRadius = Mathf.Sqrt((translatedX * translatedX) + (translatedY * translatedY)) / scaleMult;
+
+                //Get angle
+                float angle = Mathf.Atan2(translatedY, translatedX);
+
+                int oldX = Mathf.FloorToInt(oldRadius * Mathf.Cos(angle));
+
+                int oldY = Mathf.FloorToInt(oldRadius * Mathf.Sin(angle));
+
+                newImage.SetPixel(xIndex, yIndex, getValidPixel(image, oldX, oldY));
+
+            }
+        }
         return newImage;
     }
 
@@ -873,6 +997,29 @@ public class TrainNeuralNetwork : MonoBehaviour
             // Choose a random element from array
             randomIndex = prng.Next(0, elementsRemainingToShuffle);
             Batch chosenElement = data[randomIndex];
+
+            // Swap the randomly chosen element with the last unshuffled element in the array
+            elementsRemainingToShuffle--;
+            data[randomIndex] = data[elementsRemainingToShuffle];
+            data[elementsRemainingToShuffle] = chosenElement;
+
+            Percent.text = "Shuffling Batches: " + (float)(data.Length - elementsRemainingToShuffle) / data.Length * 100 + " % ";
+            PercentSlider.value = (float)(data.Length - elementsRemainingToShuffle) / data.Length;
+            yield return null;
+        }
+    }
+
+    public IEnumerator ShuffleArray(DataPoint[] data)
+    {
+        int elementsRemainingToShuffle = data.Length;
+        int randomIndex = 0;
+        System.Random prng = new System.Random();
+
+        while (elementsRemainingToShuffle > 1)
+        {
+            // Choose a random element from array
+            randomIndex = prng.Next(0, elementsRemainingToShuffle);
+            DataPoint chosenElement = data[randomIndex];
 
             // Swap the randomly chosen element with the last unshuffled element in the array
             elementsRemainingToShuffle--;
