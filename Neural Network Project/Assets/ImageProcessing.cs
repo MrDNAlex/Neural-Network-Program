@@ -144,50 +144,6 @@ public class ImageProcessing : MonoBehaviour
         return newImage;
     }
 
-    public Texture2D scaleImage (Texture2D image, float scaleMult)
-    {
-
-       // float angRad = (Mathf.PI / 180) * angle;
-
-        Texture2D newImage = new Texture2D(image.width, image.height);
-
-
-        for (int xIndex = 0; xIndex < newImage.width; xIndex++)
-        {
-            for (int yIndex = 0; yIndex < newImage.height; yIndex++)
-            {
-
-                int xCenter = Mathf.FloorToInt(image.width / 2);
-                int yCenter = Mathf.FloorToInt(image.height / 2);
-
-                int translatedX = xIndex - xCenter;
-                int translatedY = yIndex - yCenter;
-
-                //Get radius
-
-                //Radius = sqrt(x^2 + y^2)
-                //Divide by multiplier
-
-                float oldRadius = Mathf.Sqrt((translatedX * translatedX) + (translatedY * translatedY))/scaleMult;
-
-                //Get angle
-                float angle = Mathf.Atan2(translatedY, translatedX);
-
-
-
-                int oldX = Mathf.FloorToInt(oldRadius * Mathf.Cos(angle));
-
-                int oldY = Mathf.FloorToInt(oldRadius * Mathf.Sin(angle));
-
-                newImage.SetPixel(xIndex, yIndex, getValidPixel(image, oldX, oldY));
-
-            }
-        }
-        return newImage;
-
-
-    }
-
     public Color getValidPixel (Texture2D image, int oldX, int oldY)
     {
         bool verdict = true;
