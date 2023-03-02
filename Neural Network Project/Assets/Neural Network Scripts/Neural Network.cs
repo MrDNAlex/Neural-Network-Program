@@ -10,13 +10,21 @@ public class NeuralNetwork
     public double inputVal;
     NetworkLearnData[] batchLearnData;
 
+   
   
-    public NeuralNetwork (int[] layerSize)
+    public NeuralNetwork (int[] layerSize, Activation hidden, Activation output)
     {
         layers = new Layer[layerSize.Length - 1];
         for (int i = 0; i < layerSize.Length - 1; i ++)
         {
-            layers[i] = new Layer(layerSize[i], layerSize[i + 1]);
+            if (i == layerSize.Length - 2)
+            {
+                layers[i] = new Layer(layerSize[i], layerSize[i + 1], output);
+            } else
+            {
+                layers[i] = new Layer(layerSize[i], layerSize[i + 1], hidden);
+            }
+           
         }
     }
 
@@ -209,6 +217,8 @@ public class NetworkLearnData
         }
     }
 }
+
+
 
 
 

@@ -23,22 +23,24 @@ public class Layer
     public double[] weightVolicities;
     public double[] biasVelocities;
 
-    
+
 
     public double[] activations;
     public double[] weightedInputs;
     public double[] inputs;
 
 
+    Activation activationFun;
+
     //NodesIn = number of neurons the previous layer had
     //NodesOut = number of neurons of this layer
 
-    public Layer (int nodesIn, int nodesOut)
+    public Layer(int nodesIn, int nodesOut, Activation activation)
     {
         numNodesIn = nodesIn;
         numNodesOut = nodesOut;
 
-        weights = new double[nodesIn* nodesOut];
+        weights = new double[nodesIn * nodesOut];
         biases = new double[nodesOut];
 
         costGradientWeights = new double[weights.Length];
@@ -50,11 +52,13 @@ public class Layer
 
         weightedInputs = new double[nodesOut];
 
+        this.activationFun = activation;
+
         InitRandomWeights();
     }
 
     //Might not need this anymore
-    public Layer (LayerSaver laySave)
+    public Layer(LayerSaver laySave)
     {
 
         int nodesIn = laySave.numNodesIn;
@@ -63,9 +67,9 @@ public class Layer
         numNodesIn = nodesIn;
         numNodesOut = nodesOut;
 
-        weights = new double[nodesIn* nodesOut];
+        weights = new double[nodesIn * nodesOut];
         biases = new double[nodesOut];
-        costGradientWeights = new double[nodesIn* nodesOut];
+        costGradientWeights = new double[nodesIn * nodesOut];
         costGradientBias = new double[nodesOut];
 
         weightedInputs = new double[nodesOut];
@@ -75,7 +79,7 @@ public class Layer
         //load weights 
         for (int i = 0; i < numNodesIn * numNodesOut; i++)
         {
-                weights[i] = laySave.weights[i];
+            weights[i] = laySave.weights[i];
         }
     }
 
@@ -105,35 +109,35 @@ public class Layer
     }
 
     //Calculate the output of the layer
-    public double [] CalcOutput (double [] input, LayerLearnData learnData)
+    public double[] CalcOutput(double[] input, LayerLearnData learnData)
     {
         learnData.inputs = input;
 
-       // inputs = input;
+        // inputs = input;
 
         //double[] activations = new double[numNodesOut];
-        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut ++)
+        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
         {
             double weightInput = biases[nodeOut];
             for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
             {
-               
+
                 weightInput += input[nodeIn] * getWeight(nodeIn, nodeOut);
             }
 
             learnData.weightedInputs[nodeOut] = weightInput;
 
-           // weightedInputs[nodeOut] = weightInput;
-           // activations[nodeOut] = ActivationFunction(weightInput);
+            // weightedInputs[nodeOut] = weightInput;
+            // activations[nodeOut] = ActivationFunction(weightInput);
         }
 
         //Apply Activation Function 
-        for (int i = 0; i < learnData.activations.Length; i ++)
+        for (int i = 0; i < learnData.activations.Length; i++)
         {
             learnData.activations[i] = ActivationFunction(learnData.weightedInputs, i);
         }
 
-       // this.activations = activations;
+        // this.activations = activations;
 
         return learnData.activations;
 
@@ -141,54 +145,66 @@ public class Layer
 
     double ActivationFunction(double weightedInput)
     {
-        //Sigmoid
-        return 1 / (1 + Mathf.Exp(-(float)weightedInput));
-
         
-        //Hyperbolic tangent
-       // double e2w = Mathf.Exp(2 * (float)weightedInput);
-       // return (e2w - 1) / (e2w + 1);
+        switch (activationFun)
+        {
+            case Activation.Sigmoid:
+                //Sigmoid
+                return 1 / (1 + Mathf.Exp(-(float)weightedInput));
+            case Activation.HyperBolicTan:
+                //Hyperbolic tangent
+                double e2w = Mathf.Exp(2 * (float)weightedInput);
+                return (e2w - 1) / (e2w + 1);
+            case Activation.SiLU:
+                //SiLU
+                return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
+            case Activation.ReLU:
+                //ReLU
+                return Mathf.Max(0, (float)weightedInput);
+            default:
+                return 0;
+        }
 
-        //SiLU
-       // return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
 
-        //ReLU
-       // return Mathf.Max(0, (float)weightedInput);
-        
     }
 
     double ActivationFunction(double[] weightedInput, int index)
     {
-        //Sigmoid
-        return 1 / (1 + Mathf.Exp(-(float)weightedInput[index]));
-
-
-        //Hyperbolic tangent
-        // double e2w = Mathf.Exp(2 * (float)weightedInput);
-        // return (e2w - 1) / (e2w + 1);
-
-        //SiLU
-        // return weightedInput / (1 + Mathf.Exp(-(float)weightedInput));
-
-        //ReLU
-        //return Mathf.Max(0, (float)weightedInput[index]);
+        switch (activationFun)
+        {
+            case Activation.Sigmoid:
+                //Sigmoid
+                return 1 / (1 + Mathf.Exp(-(float)weightedInput[index]));
+            case Activation.HyperBolicTan:
+                //Hyperbolic tangent
+                double e2w = Mathf.Exp(2 * (float)weightedInput[index]);
+                return (e2w - 1) / (e2w + 1);
+            case Activation.SiLU:
+                //SiLU
+                return weightedInput[index] / (1 + Mathf.Exp(-(float)weightedInput[index]));
+            case Activation.ReLU:
+                //ReLU
+                return Mathf.Max(0, (float)weightedInput[index]);
+            default:
+                return 0;
+        }
 
     }
 
 
 
-    public double NodeCost (double outputVal, double expectedVal)
+    public double NodeCost(double outputVal, double expectedVal)
     {
         double error = outputVal - expectedVal;
         return error * error;
     }
 
     //Update weights and biases
-    public void ApplyGradients (double learnRate, double regularization, double momentum)
+    public void ApplyGradients(double learnRate, double regularization, double momentum)
     {
         double weightDecay = (1 - regularization * learnRate);
 
-        for (int i = 0; i < weights.Length; i ++)
+        for (int i = 0; i < weights.Length; i++)
         {
             double weight = weights[i];
             double velocity = weightVolicities[i] * momentum - costGradientWeights[i] * learnRate;
@@ -197,7 +213,7 @@ public class Layer
             costGradientWeights[i] = 0;
         }
 
-        for (int i = 0; i < biases.Length; i ++)
+        for (int i = 0; i < biases.Length; i++)
         {
             double velocity = biasVelocities[i] * momentum - costGradientBias[i] * learnRate;
             biasVelocities[i] = velocity;
@@ -239,7 +255,7 @@ public class Layer
     }
 
 
-    public void InitRandomWeights ()
+    public void InitRandomWeights()
     {
         //Apply random vals to all weights 
 
@@ -264,43 +280,59 @@ public class Layer
     //
     //Derivatives
     //
-    public double nodeCostDerivative (double outputVal, double expectedVal)
+    public double nodeCostDerivative(double outputVal, double expectedVal)
     {
         return 2 * (outputVal - expectedVal);
     }
 
-    public double ActivationDerivative (double weightedVal)
+    public double ActivationDerivative(double weightedVal)
     {
-        //Sigmoid
-        double activationVal = ActivationFunction(weightedVal);
-       return activationVal * (1 - activationVal);
 
-        //ReLU
-     //   return (weightedVal > 0) ? 1 : 0;
+        switch (activationFun)
+        {
+            case Activation.Sigmoid:
+                //Sigmoid
+                double activationVal = ActivationFunction(weightedVal);
+                return activationVal * (1 - activationVal);
+            case Activation.HyperBolicTan:
+
+            case Activation.SiLU:
+
+            case Activation.ReLU:
+                //ReLU
+                   return (weightedVal > 0) ? 1 : 0;
+            default:
+                return 0;
+        }
+
+
+
     }
 
     public double ActivationDerivative(double[] weightedVal, int index)
     {
-        //Sigmoid
-        double activationVal = ActivationFunction(weightedVal[index]);
-        return activationVal * (1 - activationVal);
+        switch (activationFun)
+        {
+            case Activation.Sigmoid:
+                //Sigmoid
+                double activationVal = ActivationFunction(weightedVal[index]);
+                return activationVal * (1 - activationVal);
+            case Activation.HyperBolicTan:
 
-        //ReLU
-        //return (weightedVal[index] > 0) ? 1 : 0;
+            case Activation.SiLU:
+
+            case Activation.ReLU:
+                //ReLU
+                return (weightedVal[index] > 0) ? 1 : 0;
+            default:
+                return 0;
+        }
     }
 
-    public double weightedValDerivative ()
-    {
-        //Value of the last activation function
-
-        return 2;
-    }
-
-
-    public double[] CalculateOutputLayerNodeValues (double[] expectedOutputs)
+    public double[] CalculateOutputLayerNodeValues(double[] expectedOutputs)
     {
         double[] nodeVals = new double[expectedOutputs.Length];
-        for (int i = 0; i < nodeVals.Length; i ++)
+        for (int i = 0; i < nodeVals.Length; i++)
         {
 
             double costDerivative = nodeCostDerivative(activations[i], expectedOutputs[i]);
@@ -324,14 +356,14 @@ public class Layer
         return nodeVals;
     }
 
-    public double[] CalculateHiddenNodeValues (Layer oldLayer, double[] oldNodeVals)
+    public double[] CalculateHiddenNodeValues(Layer oldLayer, double[] oldNodeVals)
     {
         double[] newNodeVals = new double[numNodesOut];
         for (int newNodeIndex = 0; newNodeIndex < newNodeVals.Length; newNodeIndex++)
         {
             double newNodeVal = 0;
 
-            for (int oldNodeIndex = 0; oldNodeIndex < oldNodeVals.Length; oldNodeIndex ++)
+            for (int oldNodeIndex = 0; oldNodeIndex < oldNodeVals.Length; oldNodeIndex++)
             {
                 double weightedInputDeriv = oldLayer.getWeight(newNodeIndex, oldNodeIndex);
                 newNodeVal += weightedInputDeriv * oldNodeVals[oldNodeIndex];
@@ -364,12 +396,12 @@ public class Layer
     }
 
 
-    public void UpdateGradients (double[] nodeVals)
+    public void UpdateGradients(double[] nodeVals)
     {
-       
-        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut ++)
+
+        for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
         {
-            for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn ++)
+            for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
             {
                 //Update gradients for weights
                 double derivativeCostWRTWeight = inputs[nodeIn] * nodeVals[nodeOut];
@@ -389,7 +421,7 @@ public class Layer
     {
 
         //Update Weights (lock for multithreading)
-        
+
         lock (costGradientWeights)
         {
             for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
@@ -418,7 +450,7 @@ public class Layer
 
     }
 
-    public double getWeight (int nodeIn, int nodeOut)
+    public double getWeight(int nodeIn, int nodeOut)
     {
 
         return weights[nodeOut * numNodesIn + nodeIn];
@@ -426,11 +458,20 @@ public class Layer
 
     }
 
-    public int getFlatWeightIndex (int inputNeurIndex, int outputNeurIndex)
+    public int getFlatWeightIndex(int inputNeurIndex, int outputNeurIndex)
     {
         return outputNeurIndex * numNodesIn + inputNeurIndex;
 
     }
 
 
+}
+
+[System.Serializable]
+public enum Activation
+{
+    Sigmoid,
+    HyperBolicTan,
+    SiLU,
+    ReLU,
 }

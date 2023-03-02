@@ -138,7 +138,7 @@ public class TrainNetwork : MonoBehaviour
         yield return null;
 
         //Create a new Neural Network
-        neuro = new NeuralNetwork(neuralNetworkSize);
+        neuro = new NeuralNetwork(neuralNetworkSize, Activation.Sigmoid, Activation.Sigmoid);
 
         //Calculate cost at first
 
