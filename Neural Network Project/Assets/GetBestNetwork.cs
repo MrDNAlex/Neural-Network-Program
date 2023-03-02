@@ -574,7 +574,7 @@ public class GetBestNetwork : MonoBehaviour
             yield return null;
 
             //Create a new Neural Network
-            neuro = new NeuralNetwork(networkInfos[index].neuralNetSize);
+            neuro = new NeuralNetwork(networkInfos[index].neuralNetSize, Activation.Sigmoid, Activation.Sigmoid);
 
             //Calculate How many batches needed
             int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkInfos[index].dataPerBatch);
