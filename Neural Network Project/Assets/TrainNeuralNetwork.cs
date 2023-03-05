@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.IO;
 using UnityEngine.Rendering;
 using System.Linq;
+using DNANeuralNetwork;
 
 public class TrainNeuralNetwork : MonoBehaviour
 {
@@ -186,7 +187,7 @@ public class TrainNeuralNetwork : MonoBehaviour
     {
         Image2[] images = LoadImages();
 
-
+        
         for (int i = 0; i < images.Length; i ++)
         {
             byte[] bytes = images[i].ConvertToTexture2D().EncodeToPNG();
@@ -197,6 +198,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             PercentSlider.value = (float)i / images.Length;
             yield return null;
         }
+        
 
     }
 
@@ -1261,6 +1263,7 @@ public class TrainNeuralNetwork : MonoBehaviour
         return y1 * standardDeviation + mean;
     }
 
+    
     Image2[] LoadImages()
     {
         List<Image2> allImages = new List<Image2>();
@@ -1311,6 +1314,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
 
     }
+    
 
 
 

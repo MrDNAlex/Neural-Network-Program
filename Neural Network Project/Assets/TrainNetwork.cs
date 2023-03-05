@@ -4,6 +4,7 @@ using UnityEngine;
 using System.IO;
 using System.Linq;
 using UnityEngine.UI;
+using DNANeuralNetwork;
 
 public class TrainNetwork : MonoBehaviour
 {
