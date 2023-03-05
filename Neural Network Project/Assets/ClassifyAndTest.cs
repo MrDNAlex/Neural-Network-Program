@@ -24,6 +24,8 @@ public class ClassifyAndTest : MonoBehaviour
 
     [SerializeField] List<string> dispLabel = new List<string>();
 
+  //  [SerializeField] Dictionary<int, string> labels;
+
 
     [SerializeField] Image dispImg;
     [SerializeField] Text guess;
@@ -60,14 +62,10 @@ public class ClassifyAndTest : MonoBehaviour
 
     public void LoadStuff ()
     {
-        //Load Neural Network
-        /*
-        savedNeuro = loadSaveFromPath(NeuralNetPath);
-
-        neuro = savedNeuro.createNetwork(savedNeuro);
-        */
-
+   
         neuro = loadSaveFromPathNeuralNetwork(NeuralNetPath);
+
+        neuro.SetActivationFunction(Activation.GetActivationFromType(Activation.ActivationType.ReLU), Activation.GetActivationFromType(Activation.ActivationType.Softmax));
 
         Debug.Log("Neuro Loaded");
 
@@ -145,7 +143,7 @@ public class ClassifyAndTest : MonoBehaviour
 
             savedNeuro = loadSaveFromPath(NeuralNetPath);
 
-            neuro = savedNeuro.createNetwork(savedNeuro);
+           // neuro = savedNeuro.createNetwork(savedNeuro);
 
             Debug.Log("Neuro Loaded");
         }
@@ -310,27 +308,34 @@ public class ClassifyAndTest : MonoBehaviour
         dispImg.sprite = Sprite.Create(img, new Rect(new Vector2(0,0), new Vector2(img.width, img.height)), new Vector2(0,0));
 
 
-        int result = neuro.Classify(imgData.inputs);
+        (int label, double[] results) = neuro.Classify(imgData.inputs);
+      // int result = neuro.Classify(imgData.inputs);
 
-        double[] result2 = neuro.Classify2(imgData.inputs);
+      //  double[] result2 = neuro.Classify2(imgData.inputs);
 
 
 
-        guess.text = "DNA-PC guesses this is a " + dispLabel[result];
+        guess.text = "DNA-PC guesses this is a " + dispLabel[label];
 
         guess.text += "\n Answer is a " + dispLabel[imgData.label];
 
 
-        guess.text += "\n" + dispLabel[0] + ": " + result2[0] * 100 + " % ";
-        guess.text += "\n" + dispLabel[1] + ": " + result2[1] * 100 + " % ";
-        guess.text += "\n" + dispLabel[2] + ": " + result2[2] * 100 + " % ";
+        for (int i = 0; i < results.Length; i ++)
+        {
+            guess.text += "\n" + dispLabel[i] + " : " + results[i] * 100 + "%";
+        }
+
+
+       // guess.text += "\n" + dispLabel[0] + ": " + result2[0] * 100 + " % ";
+       // guess.text += "\n" + dispLabel[1] + ": " + result2[1] * 100 + " % ";
+       // guess.text += "\n" + dispLabel[2] + ": " + result2[2] * 100 + " % ";
+
+        
 
 
 
-
-
+        
         /*
-
         if (result == 0)
         {
             guess.text = "DNA-PC guesses this is a Four";
@@ -354,6 +359,7 @@ public class ClassifyAndTest : MonoBehaviour
             guess.text += "\n Answer is a Six";
         }
         */
+        
 
         // Debug.Log(imgData.label);
 

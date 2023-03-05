@@ -574,7 +574,7 @@ public class GetBestNetwork : MonoBehaviour
             yield return null;
 
             //Create a new Neural Network
-            neuro = new NeuralNetwork(networkInfos[index].neuralNetSize, Activation.Sigmoid, Activation.Sigmoid);
+           // neuro = new NeuralNetwork(networkInfos[index].neuralNetSize, Activation.Sigmoid, Activation.Sigmoid, Cost.MeanSquareError);
 
             //Calculate How many batches needed
             int numOfBatches = Mathf.FloorToInt(allTrainData.Length / networkInfos[index].dataPerBatch);
@@ -632,7 +632,7 @@ public class GetBestNetwork : MonoBehaviour
 
             StartCoroutine(displayCost(true, true, neuro, costData));
 
-            networkInfos[index].cost = neuro.Cost(costData);
+           // networkInfos[index].cost = neuro.Cost(costData);
 
 
             createLine("Start Testing");
@@ -661,10 +661,10 @@ public class GetBestNetwork : MonoBehaviour
             {
                 Debug.Log(neuro.Classify(data.inputs) + " : " + data.label);
 
-                if (neuro.Classify(data.inputs) == data.label)
-                {
-                    accuracy++;
-                }
+                //if (neuro.Classify(data.inputs) == data.label)
+                //{
+                //    accuracy++;
+                //}
 
             }
 
@@ -1122,12 +1122,12 @@ public class GetBestNetwork : MonoBehaviour
         {
             if (all)
             {
-                createLine("All Cost After: " + neuro.Cost(data));
+               // createLine("All Cost After: " + neuro.Cost(data));
                 yield return null;
             }
             else
             {
-                createLine("Single Cost After: " + neuro.Cost(data[0]));
+                //createLine("Single Cost After: " + neuro.Cost(data[0]));
                 yield return null;
             }
         }
@@ -1135,12 +1135,12 @@ public class GetBestNetwork : MonoBehaviour
         {
             if (all)
             {
-                createLine("Single Cost Before: " + neuro.Cost(data[0]));
+                //createLine("Single Cost Before: " + neuro.Cost(data[0]));
                 yield return null;
             }
             else
             {
-                createLine("All Cost Before: " + neuro.Cost(data));
+               // createLine("All Cost Before: " + neuro.Cost(data));
                 yield return null;
             }
         }

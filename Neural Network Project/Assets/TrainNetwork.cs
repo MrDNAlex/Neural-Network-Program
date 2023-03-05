@@ -138,7 +138,7 @@ public class TrainNetwork : MonoBehaviour
         yield return null;
 
         //Create a new Neural Network
-        neuro = new NeuralNetwork(neuralNetworkSize, Activation.Sigmoid, Activation.Sigmoid);
+        //neuro = new NeuralNetwork(neuralNetworkSize, Activation.Sigmoid, Activation.Sigmoid, Cost.MeanSquareError);
 
         //Calculate cost at first
 
@@ -164,10 +164,10 @@ public class TrainNetwork : MonoBehaviour
         Log.text += "\n Finished Batching";
         yield return null;
 
-        Log.text += "\n Single: " + neuro.Cost(allData2[0]);
+       // Log.text += "\n Single: " + neuro.Cost(allData2[0]);
         yield return null;
 
-        Log.text += "\n All: " + neuro.Cost(allData2);
+      //  Log.text += "\n All: " + neuro.Cost(allData2);
         yield return null;
 
 
@@ -197,10 +197,10 @@ public class TrainNetwork : MonoBehaviour
         Log.text += "\n Finished Teaching";
         yield return null;
 
-        Log.text += "\n Single: " + neuro.Cost(allData2[0]);
+       // Log.text += "\n Single: " + neuro.Cost(allData2[0]);
         yield return null;
 
-        Log.text += "\n All: " + neuro.Cost(allData2);
+       // Log.text += "\n All: " + neuro.Cost(allData2);
         yield return null;
 
         Log.text += "\n Saving";

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+
 [System.Serializable]
 public class NeuralNetworkSaver
 {
@@ -23,19 +24,10 @@ public class NeuralNetworkSaver
 
     }
 
+    /*
     public NeuralNetwork createNetwork (NeuralNetworkSaver saver)
     {
-        /*
-        List<int> ints = new List<int>();
-
-        ints.Add(saver.layers[0].numNodesIn);
-        ints.Add(saver.layers[0].numNodesOut);
-
-        for (int i = 1; i < saver.layers.Length; i ++)
-        {
-            ints.Add(saver.layers[i].numNodesOut);
-        }
-        */
+       
 
         NeuralNetwork neuro = new NeuralNetwork();
 
@@ -49,6 +41,8 @@ public class NeuralNetworkSaver
         return neuro;
 
     }
+    */
 
 
 }
+

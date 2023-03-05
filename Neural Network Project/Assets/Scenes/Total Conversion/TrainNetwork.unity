@@ -887,15 +887,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 181f03cbe62ebeb4387392e13eaeacfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  networkSize:
-    neuralNetSize: 10030000580200000a000000
-  hiddenActivation: 3
-  outputActivation: 0
-  dataPerBatch: 32
-  learnRates: 0.05
-  learnRateDecay: 0.04
-  regularization: 0.1
-  momentum: 0.9
+  imageSize: 28
+  greyscale: 1
+  dataFiles:
+  - imageFile: {fileID: 4900000, guid: c15c1f8f65ee4c04c9b1dd6dbfad532d, type: 3}
+    labelFile: {fileID: 4900000, guid: 5fb034f19485dfe459d2682ac586b442, type: 3}
+  loadFromFile: 0
+  networkSettings:
+    networkSize: 10030000640000000a000000
+    activationType: 2
+    outputActivationType: 0
+    costType: 1
+    initialLearningRate: 0.05
+    learnRateDecay: 0.075
+    dataPerBatch: 32
+    momentum: 0.9
+    regularization: 0.1
   images:
   - {fileID: 2800000, guid: 2d7bb64b788fcc344b1ccd02887f28ef, type: 3}
   - {fileID: 2800000, guid: ae7efe8ebc1692c45bf4fd50b51d4063, type: 3}
@@ -906,23 +913,21 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 2011e5c4da89d1d4a9dbcee7a2be1548, type: 3}
   subImageSize: {x: 28, y: 28}
   trainingFolderPaths:
-  - MNIST Images/0
-  - MNIST Images/1
-  - MNIST Images/2
-  - MNIST Images/3
-  - MNIST Images/4
-  - MNIST Images/5
-  - MNIST Images/6
-  - MNIST Images/7
-  - MNIST Images/8
-  - MNIST Images/9
+  - ImageProcessing/0
+  - ImageProcessing/1
+  - ImageProcessing/2
+  - ImageProcessing/3
+  - ImageProcessing/4
+  - ImageProcessing/5
+  - ImageProcessing/6
+  - ImageProcessing/7
+  - ImageProcessing/8
+  - ImageProcessing/9
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
   maxCopies: 1
   minCopies: 1
-  noiseProbability: 0.6000000238418579
-  noiseStrength: 0.6000000238418579
   whiteBackground: 0
   outputNum: 10
   reshuffleIndex: 15
@@ -931,7 +936,7 @@ MonoBehaviour:
   exportPath: Assets/Resources/NeuralNetworks
   errorImagePath: Assets/Resources/ErrorImages
   imageProcessingPath: Assets/Resources/ImageProcessing
-  fileName: Testing
+  fileName: 0To9
   saveErrorImg: 0
   saveImageProcessing: 0
   StartBTN: {fileID: 1770273862}
