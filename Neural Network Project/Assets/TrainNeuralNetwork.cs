@@ -696,15 +696,7 @@ public class TrainNeuralNetwork : MonoBehaviour
     {
         //Create a copy image of expanded dimensions
 
-
-        // Debug.Log(image.width);
-        //  Debug.Log(image.width);
-
         Texture2D newImage = new Texture2D(image.width * scaleFactor, image.height * scaleFactor);
-
-
-        //  Debug.Log(newImage.width);
-        //  Debug.Log(newImage.width);
 
         for (int xIndex = 0; xIndex < newImage.width; xIndex++)
         {
