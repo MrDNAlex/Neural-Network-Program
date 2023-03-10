@@ -887,12 +887,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 181f03cbe62ebeb4387392e13eaeacfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  imageSize: 28
-  greyscale: 1
-  dataFiles:
-  - imageFile: {fileID: 4900000, guid: c15c1f8f65ee4c04c9b1dd6dbfad532d, type: 3}
-    labelFile: {fileID: 4900000, guid: 5fb034f19485dfe459d2682ac586b442, type: 3}
-  loadFromFile: 0
+  importSettings:
+    files:
+    - imageFile: {fileID: 4900000, guid: 3b03e05d691e607448f5aa90d1a8a728, type: 3}
+      labelFile: {fileID: 4900000, guid: 34ba3b5a69e608c4fbdd47ebbd68bacd, type: 3}
+      outputFile: {fileID: 4900000, guid: b1ef8387004cd0f42b388a0fd808e7c2, type: 3}
+    imageSize: {x: 28, y: 28}
+    numOfOutputs: 10
+    greyScale: 1
+    useLabel: 1
+    editImages: 1
+  loadFromFile: 1
   networkSettings:
     networkSize: 100300002c0100000a000000
     activationType: 2
@@ -936,7 +941,7 @@ MonoBehaviour:
   exportPath: Assets/Resources/NeuralNetworks
   errorImagePath: Assets/Resources/ErrorImages
   imageProcessingPath: Assets/Resources/ImageProcessing
-  fileName: 0To9
+  fileName: TestingNewSystem
   saveErrorImg: 0
   saveImageProcessing: 0
   StartBTN: {fileID: 1770273862}

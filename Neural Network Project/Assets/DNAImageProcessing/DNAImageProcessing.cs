@@ -9,7 +9,7 @@ namespace DNAImageProcessing
     {
 
         static bool whiteBackground;
-        public void ExpandImage(Texture2D image, int scaleFactor, string name)
+        public static void ExpandImage(Texture2D image, int scaleFactor, string name)
         {
             //Create a copy image of expanded dimensions
 
@@ -30,7 +30,7 @@ namespace DNAImageProcessing
 
         }
 
-        public Texture2D ApplyRotation(Texture2D image, float angle)
+        public static Texture2D ApplyRotation(Texture2D image, float angle)
         {
             float angRad = (Mathf.PI / 180) * angle;
 
@@ -60,7 +60,7 @@ namespace DNAImageProcessing
             return newImage;
         }
 
-        public Color getValidPixel(Texture2D image, int oldX, int oldY)
+        public static Color getValidPixel(Texture2D image, int oldX, int oldY)
         {
             bool verdict = true;
 
@@ -89,7 +89,7 @@ namespace DNAImageProcessing
         }
 
 
-        public void Compress(Texture2D image, int scaleFactor, string name)
+        public static void Compress(Texture2D image, int scaleFactor, string name)
         {
             Texture2D newImage = new Texture2D(image.width / scaleFactor, image.height / scaleFactor);
 
@@ -125,7 +125,7 @@ namespace DNAImageProcessing
 
         }
 
-        public Texture2D ApplyNoise(Texture2D image)
+        public static Texture2D ApplyNoise(Texture2D image)
         {
             //5% of pixels get noise
 
@@ -156,24 +156,10 @@ namespace DNAImageProcessing
                 }
             }
 
-
-            /*
-            Texture2D newImage = image;
-            float mult = Random.Range(1, 5);
-            int num = Mathf.FloorToInt((float)(newImage.width * mult / 5));
-            for (int i = 0; i < num; i++)
-            {
-                int xPos = Mathf.FloorToInt(Random.Range(0, newImage.width));
-                int yPos = Mathf.FloorToInt(Random.Range(0, newImage.height));
-                float col = (float)Random.Range(0, 255) / 255;
-                newImage.SetPixel(xPos, yPos, new Color(col, col, col));
-            }
-            */
-
             return newImage;
         }
 
-        public Texture2D ApplyOffset(Texture2D image, int offsetX, int offsetY)
+        public static Texture2D ApplyOffset(Texture2D image, int offsetX, int offsetY)
         {
             Texture2D newImage = new Texture2D(image.width, image.height);
 
@@ -225,7 +211,7 @@ namespace DNAImageProcessing
 
         }
 
-        public Texture2D ApplyScale(Texture2D image, float scaleMult)
+        public static Texture2D ApplyScale(Texture2D image, float scaleMult)
         {
             Texture2D newImage = new Texture2D(image.width, image.height);
 

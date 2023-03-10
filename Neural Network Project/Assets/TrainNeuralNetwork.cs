@@ -9,37 +9,15 @@ using DNANeuralNetwork;
 
 public class TrainNeuralNetwork : MonoBehaviour
 {
-    [System.Serializable]
-    public struct DataFile
-    {
-        public TextAsset imageFile;
-        public TextAsset labelFile;
-    }
 
-    [SerializeField] int imageSize = 28;
-    [SerializeField] bool greyscale = true;
-    [SerializeField] DataFile[] dataFiles;
+    // [SerializeField] int imageSize = 28;
+    // [SerializeField] bool greyscale = true;
+    [Header("Importing From File")]
+    [SerializeField] ImageHelper.ImportSettings importSettings;
     [SerializeField] bool loadFromFile;
-
-
-
-
 
     [Header("Network Settings")]
     [SerializeField] NeuralNetworkSettings networkSettings;
-    /*
-    [SerializeField] NetworkSize networkSize;
-    [SerializeField] Activation hiddenActivation;
-    [SerializeField] Activation outputActivation;
-    [SerializeField] Cost costType;
-    [SerializeField] int dataPerBatch;
-    [SerializeField] float learnRates;
-    [SerializeField] float learnRateDecay;
-    [SerializeField] float regularization;
-    [SerializeField] float momentum;
-    */
-
-   // NetworkTrainingInfo networkSettings;
 
     [Header("Big To Small Conversion")]
 
@@ -50,18 +28,16 @@ public class TrainNeuralNetwork : MonoBehaviour
 
     [Header("ImportImages")]
     [SerializeField] List<string> trainingFolderPaths = new List<string>();
-   // [SerializeField] List<string> testingFolderPaths = new List<string>();
+    // [SerializeField] List<string> testingFolderPaths = new List<string>();
     [SerializeField] bool useFolders;
     [SerializeField] bool processImages;
     [SerializeField] bool saveImportedTrainingImages;
-   
+
 
 
     [Header("Image Processing")]
     [SerializeField] int maxCopies;
     [SerializeField] int minCopies;
-    //[Range(0, 1)] public double noiseProbability;
-   // [Range(0, 1)] public double noiseStrength;
     [SerializeField] bool whiteBackground;
 
     List<List<Texture2D>> processedImages = new List<List<Texture2D>>(); //Processed Images need to be cleared
@@ -120,9 +96,9 @@ public class TrainNeuralNetwork : MonoBehaviour
     //You know what, it must definitely be overfitting, let's figure out how to download that mnist and extract it, we will save them as individual images and then place them in folders
 
     //**
-  
 
-    
+
+
     //Check the image processing settings in the Seb Lague Github
     //When ever you have time, copy over neural network relevant scripts 
     //Copy the image data from seb lague
@@ -158,7 +134,8 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                 StartCoroutine(loadImagesFromFile());
 
-            } else
+            }
+            else
             {
                 if (useFolders)
                 {
@@ -178,31 +155,99 @@ public class TrainNeuralNetwork : MonoBehaviour
                 }
             }
 
-           
-           
+
+
         }
     }
 
-    IEnumerator loadImagesFromFile ()
+    IEnumerator loadImagesFromFile()
     {
-        Image2[] images = LoadImages();
+        createLine("Start Deconverting");
+        List<ImageData> images = ImageHelper.LoadImages(importSettings);
+        createLine("Finished Deconverting");
+        List<List<ImageData>> allData = new List<List<ImageData>>();
 
-        
-        for (int i = 0; i < images.Length; i ++)
+        List<DataPoint> trainingImages = new List<DataPoint>();
+        List<DataPoint> evalImages = new List<DataPoint>();
+
+
+        //IDk there's an error somewhere here when the Data Point conversion starts, look into it tomorrow
+
+        if (importSettings.useLabel)
         {
-            byte[] bytes = images[i].ConvertToTexture2D().EncodeToPNG();
+            for (int i = 0; i < importSettings.numOfOutputs; i++)
+            {
+                allData.Add(new List<ImageData>());
+            }
 
-            File.WriteAllBytes(imageProcessingPath + "/" + images[i].label + "/" + "Image-" + i + ".png", bytes);
+            createLine("Splitting Data into Groups");
 
-            Percent.text = (float)i / images.Length * 100 + " % ";
-            PercentSlider.value = (float)i / images.Length;
+            for (int i = 0; i < images.Count; i++)
+            {
+                allData[images[i].label].Add(images[i]);
+
+                Percent.text = (float)i / images.Count * 100 + " % ";
+                PercentSlider.value = (float)i / images.Count;
+                yield return null;
+            }
+
+            createLine("Finished Splitting Data into Groups");
             yield return null;
+
+            //Erase the images
+            images = null;
+
+            createLine("Start Data Point Conversion");
+            yield return null;
+
+            //Get the data split
+            for (int i = 0; i < allData.Count; i++)
+            {
+
+                int testingIndex = Mathf.FloorToInt(allData[i].Count * trainingSplit);
+
+                for (int j = 0; j < allData[i].Count; j++)
+                {
+                    if (j > testingIndex)
+                    {
+                        evalImages.Add(allData[i][j].GetDataPoint());
+                    }
+                    else
+                    {
+                        //Give an option to edit/modify the image
+                        if (importSettings.editImages)
+                        {
+                            allData[i][j].EditImage(whiteBackground);
+                        }
+
+                        Debug.Log("Adding: " + i);
+                        yield return null;
+
+                        trainingImages.Add(allData[i][j].GetDataPoint());
+
+                    }
+
+                    Percent.text = (float)j / allData[i].Count * 100 + " % ";
+                    PercentSlider.value = (float)j / allData[i].Count;
+                    createLine("Finished Data Conversion " + i);
+                    yield return null;
+
+                    
+                }
+            }
         }
-        
+        yield return null;
+
+
+        this.allTrainData = trainingImages.ToArray();
+        this.evaluateData = evalImages.ToArray();
+
+        //Start the training
+        StartCoroutine(trainNetwork());
 
     }
 
-    public IEnumerator importFromFolder (List<string> paths, List<DataPoint> data )
+    public IEnumerator importFromFolder(List<string> paths, List<DataPoint> data)
     {
 
         createLine("Starting Image Importing");
@@ -210,7 +255,7 @@ public class TrainNeuralNetwork : MonoBehaviour
         List<DataPoint> evalData = new List<DataPoint>();
         int testingIndex = 0;
 
-        for (int i = 0; i < paths.Count; i ++)
+        for (int i = 0; i < paths.Count; i++)
         {
             //Add new list
             newImages.Add(new List<Texture2D>());
@@ -221,58 +266,44 @@ public class TrainNeuralNetwork : MonoBehaviour
             testingIndex = Mathf.FloorToInt(newImages[i].Count * trainingSplit);
 
             //Loop through all images
-            for (int j = 0; j < newImages[i].Count; j ++)
+            for (int j = 0; j < newImages[i].Count; j++)
             {
                 System.Random rng = new System.Random(Random.Range(0, 1000));
                 Texture2D img = newImages[i][j];
 
                 //Debug.Log(RandomInNormalDistribution(rng));
-                
+
                 if (j >= testingIndex)
                 {
                     evalData.Add(imageToData(img, i, outputNum));
-                } else
+                }
+                else
                 {
                     //Check if we process the images
                     if (processImages)
                     {
                         //Maybe remove the thresholds
                         //Process images individually
-                       // if (rng.NextDouble() >= 0.5)
-                       // {
-                            double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
 
-                            //Apply Scale (0.5 - 1.5)
-                            img = ApplyScale(img, (float)scale);
-                        //}
+                        double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
 
-                       // if (rng.NextDouble() >= 0.5)
-                       // {
-                           
-                       // }
+                        img = ApplyScale(img, (float)scale);
 
-                      //  if (rng.NextDouble() >= 0.5)
-                      //  {
-                            float angle = (float)RandomInNormalDistribution(rng) * 10;
+                        float angle = (float)RandomInNormalDistribution(rng) * 10;
 
-                            //Apply Rotation
-                            img = ApplyRotation(img, angle);
+                        //Apply Rotation
+                        img = ApplyRotation(img, angle);
 
-                        //  }
                         //Generate offsetNumbers
                         //Used to be 5
                         int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10));
-                            int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
+                        int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
 
-                            //Apply Offset (max 1/3 width and height)
-                            img = ApplyOffset(img, offsetX, offsetY);
-                       
+                        //Apply Offset (max 1/3 width and height)
+                        img = ApplyOffset(img, offsetX, offsetY);
 
-                        // if (rng.NextDouble() >= 0.5)
-                        // {
                         //Apply Noise
                         img = ApplyNoise(img);
-                       // }
                     }
 
                     //Convert to Data point
@@ -551,7 +582,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                     yield return null;
                 }
-               
+
             }
             createLine("Finished Type " + type);
 
@@ -593,7 +624,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         //Set Cost function
         neuro.SetCostFunction(Cost.GetCostFromType(Cost.CostType.MeanSquareError));
-       
+
 
         createLine("Starting Data Shuffle");
         yield return null;
@@ -655,7 +686,7 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             // StartCoroutine(displayCost(false, false, neuro, evaluateData));
 
-           // StartCoroutine(displayCost(true, false, neuro, evaluateData));
+            // StartCoroutine(displayCost(true, false, neuro, evaluateData));
 
             //Teaching
             for (int i = 0; i < batches.Length; i++)
@@ -772,7 +803,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             {
                 return Color.black;
             }
-            
+
         }
 
     }
@@ -902,11 +933,12 @@ public class TrainNeuralNetwork : MonoBehaviour
                     if (whiteBackground)
                     {
                         col = Color.white;
-                    } else
+                    }
+                    else
                     {
                         col = Color.black;
                     }
-                   
+
                 }
 
                 newImage.SetPixel(xIndex, yIndex, col);
@@ -996,13 +1028,13 @@ public class TrainNeuralNetwork : MonoBehaviour
         {
             if (all)
             {
-                
-               // createLine("All Cost After: " + neuro.Cost(data));
+
+                // createLine("All Cost After: " + neuro.Cost(data));
                 yield return null;
             }
             else
             {
-               // createLine("Single Cost After: " + neuro.Cost(data[0]));
+                // createLine("Single Cost After: " + neuro.Cost(data[0]));
                 yield return null;
             }
         }
@@ -1010,13 +1042,13 @@ public class TrainNeuralNetwork : MonoBehaviour
         {
             if (all)
             {
-               // createLine("All Cost Before: " + neuro.Cost(data));
+                // createLine("All Cost Before: " + neuro.Cost(data));
                 yield return null;
             }
             else
             {
 
-               // createLine("Single Cost Before: " + neuro.Cost(data[0]));
+                // createLine("Single Cost Before: " + neuro.Cost(data[0]));
                 yield return null;
             }
         }
@@ -1066,14 +1098,14 @@ public class TrainNeuralNetwork : MonoBehaviour
 
                     //double currentCost = network.Cost(allTrainData);
 
-                   // if (currentCost < bestCost)
-                   // {
-                        //Replace Network witht the new one
-                        bestNetwork = network;
-                        createLine("New Best Network Made");
+                    // if (currentCost < bestCost)
+                    // {
+                    //Replace Network witht the new one
+                    bestNetwork = network;
+                    createLine("New Best Network Made");
 
-                        saveNetwork(bestNetwork, fileName + " (Best)");
-                  // }
+                    saveNetwork(bestNetwork, fileName + " (Best)");
+                    // }
                 }
                 else
                 {
@@ -1211,17 +1243,17 @@ public class TrainNeuralNetwork : MonoBehaviour
     public IEnumerator EvaluateNetwork(NeuralNetwork neuro, DataPoint[] data)
     {
         int accuracy = 0;
-        
+
         for (int i = 0; i < data.Length; i++)
         {
             (int, double[]) classify = neuro.Classify(data[i].inputs);
 
-            
+
 
             //int classify = neuro.Classify(data[i].inputs);
             int label = data[i].label;
 
-           Debug.Log(classify.Item1 + " : " + label);
+            Debug.Log(classify.Item1 + " : " + label);
 
             if (classify.Item1 == label)
             {
@@ -1236,7 +1268,7 @@ public class TrainNeuralNetwork : MonoBehaviour
             yield return null;
         }
 
-        
+
 
         float actualAccuracy = (float)accuracy / data.Length * 100;
 
@@ -1255,58 +1287,9 @@ public class TrainNeuralNetwork : MonoBehaviour
         return y1 * standardDeviation + mean;
     }
 
-    
-    Image2[] LoadImages()
-    {
-        List<Image2> allImages = new List<Image2>();
-
-        foreach (var file in dataFiles)
-        {
-            Image2[] images = LoadImages(file.imageFile.bytes, file.labelFile.bytes);
-            allImages.AddRange(images);
-        }
-
-        return allImages.ToArray();
 
 
-        Image2[] LoadImages(byte[] imageData, byte[] labelData)
-        {
-            int numChannels = (greyscale) ? 1 : 3;
-            int bytesPerImage = imageSize * imageSize * numChannels;
-            int bytesPerLabel = 1;
 
-            int numImages = imageData.Length / bytesPerImage;
-            int numLabels = labelData.Length / bytesPerLabel;
-            Debug.Assert(numImages == numLabels, $"Number of images doesn't match number of labels ({numImages} / {numLabels})");
-
-            int dataSetSize = System.Math.Min(numImages, numLabels);
-            var images = new Image2[dataSetSize];
-
-            // Scale pixel values from [0, 255] to [0, 1]
-            double pixelRangeScale = 1 / 255.0;
-            double[] allPixelValues = new double[imageData.Length];
-
-            System.Threading.Tasks.Parallel.For(0, imageData.Length, (i) =>
-            {
-                allPixelValues[i] = imageData[i] * pixelRangeScale;
-            });
-
-            // Create images
-            System.Threading.Tasks.Parallel.For(0, numImages, (imageIndex) =>
-            {
-                int byteOffset = imageIndex * bytesPerImage;
-                double[] pixelValues = new double[bytesPerImage];
-                System.Array.Copy(allPixelValues, byteOffset, pixelValues, 0, bytesPerImage);
-                Image2 image = new Image2(imageSize, greyscale, pixelValues, labelData[imageIndex]);
-                images[imageIndex] = image;
-            });
-
-            return images;
-        }
-
-
-    }
-    
 
 
 

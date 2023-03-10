@@ -28,4 +28,13 @@ public class DataPoint
         return oneHot;
     }
 
+
+
+    public DataPoint (double[] inputs, double[] outputs)
+    {
+        this.inputs = inputs;
+        this.expectedOutputs = outputs;
+        this.label = 0;
+    }
+
 }

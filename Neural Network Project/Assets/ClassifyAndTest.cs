@@ -228,6 +228,26 @@ public class ClassifyAndTest : MonoBehaviour
 
         }
 
+        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.Q))
+        {
+            DataPointFile file = new DataPointFile();
+
+            foreach (DataPoint d in data)
+            {
+                file.AddData(d);
+            }
+
+            var dir = "Assets/Resources/" + "Data" + ".json";
+
+            string jsonData = JsonUtility.ToJson(file, true);
+
+            Debug.Log(jsonData);
+
+            File.WriteAllText(dir, jsonData);
+
+           
+        }
+
     }
 
     public NeuralNetworkSaver loadSaveFromPath(string path)
