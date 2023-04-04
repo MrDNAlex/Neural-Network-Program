@@ -343,7 +343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 809ea78d4b5cab943807c1ece200092c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  NeuralNetPath: Assets/Resources/NeuralNetworks/BestNetworks/0To9 (Best).json
+  NeuralNetPath: Assets/Resources/NeuralNetworks/BestNetworks/TestingNewSystem (Best).json
   testingImagePaths:
   - TestingImages/0
   - TestingImages/1

@@ -891,19 +891,10 @@ MonoBehaviour:
   fileName: Images
   trainingFolderPaths:
   - ImageProcessing/0
-  - ImageProcessing/1
-  - ImageProcessing/2
-  - ImageProcessing/3
-  - ImageProcessing/4
-  - ImageProcessing/5
-  - ImageProcessing/6
-  - ImageProcessing/7
-  - ImageProcessing/8
-  - ImageProcessing/9
   trainingSplit: 0.8
   useIndexAsLabel: 1
   greyScale: 1
-  outputCount: 10
+  outputCount: 1
   StartBTN: {fileID: 1770273862}
   Percent: {fileID: 1034079072}
   PercentSlider: {fileID: 1529763200}

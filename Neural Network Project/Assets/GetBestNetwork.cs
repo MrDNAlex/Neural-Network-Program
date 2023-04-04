@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
-using DNANeuralNetwork;
+using DNANeuralNet;
 
 public class GetBestNetwork : MonoBehaviour
 {

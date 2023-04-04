@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using System.IO;
 using UnityEngine.Rendering;
 using System.Linq;
-using DNANeuralNetwork;
+using DNANeuralNet;
 
 public class TrainNeuralNetwork : MonoBehaviour
 {
@@ -15,6 +15,8 @@ public class TrainNeuralNetwork : MonoBehaviour
     [Header("Importing From File")]
     [SerializeField] ImageHelper.ImportSettings importSettings;
     [SerializeField] bool loadFromFile;
+    [SerializeField] bool newMode;
+    int MemoryImageNum = 0;
 
     [Header("Network Settings")]
     [SerializeField] NeuralNetworkSettings networkSettings;
@@ -111,6 +113,7 @@ public class TrainNeuralNetwork : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         //Create network settings
 
         StartBTN.onClick.AddListener(nextStep);
@@ -155,15 +158,36 @@ public class TrainNeuralNetwork : MonoBehaviour
                 }
             }
 
-
-
         }
     }
 
     IEnumerator loadImagesFromFile()
     {
+
         createLine("Start Deconverting");
-        List<ImageData> images = ImageHelper.LoadImages(importSettings);
+        List<ImageData> images = new List<ImageData>();
+        if (importSettings.saveMemory)
+        {
+            //Find a way to get all the image count
+
+            //Oh, get the save path and foreach loop over all files, save the number to MemoryImageNum
+
+            ImageHelper.LoadImagesMemory(importSettings, trainingSplit);
+
+            
+            DirectoryInfo dir = new DirectoryInfo(importSettings.folderPath + "/" + "TrainFolder");
+
+            foreach (var file in dir.GetFiles("*.bytes"))
+            {
+                //Add the path of the file
+                MemoryImageNum++;
+            }
+        } else
+        {
+            images = ImageHelper.LoadImages(importSettings);
+        }
+
+        
         createLine("Finished Deconverting");
         List<List<ImageData>> allData = new List<List<ImageData>>();
 
@@ -182,6 +206,13 @@ public class TrainNeuralNetwork : MonoBehaviour
 
             createLine("Splitting Data into Groups");
 
+            //Multithread this
+
+            //System.Threading.Tasks.Parallel.For(0, images.Count, (i) =>
+            // {
+            //     allData[images[i].label].Add(images[i]);
+            // });
+
             for (int i = 0; i < images.Count; i++)
             {
                 allData[images[i].label].Add(images[i]);
@@ -190,6 +221,7 @@ public class TrainNeuralNetwork : MonoBehaviour
                 PercentSlider.value = (float)i / images.Count;
                 yield return null;
             }
+
 
             createLine("Finished Splitting Data into Groups");
             yield return null;
@@ -210,7 +242,7 @@ public class TrainNeuralNetwork : MonoBehaviour
                 {
                     if (j > testingIndex)
                     {
-                        evalImages.Add(allData[i][j].GetDataPoint());
+                        evalImages.Add(allData[i][j].GetDataPoint(true));
                     }
                     else
                     {
@@ -220,30 +252,33 @@ public class TrainNeuralNetwork : MonoBehaviour
                             allData[i][j].EditImage(whiteBackground);
                         }
 
-                        Debug.Log("Adding: " + i);
-                        yield return null;
-
-                        trainingImages.Add(allData[i][j].GetDataPoint());
-
+                        trainingImages.Add(allData[i][j].GetDataPoint(true));
                     }
 
                     Percent.text = (float)j / allData[i].Count * 100 + " % ";
                     PercentSlider.value = (float)j / allData[i].Count;
-                    createLine("Finished Data Conversion " + i);
                     yield return null;
 
-                    
                 }
+                createLine("Finished Data Conversion " + i);
+                yield return null;
             }
         }
         yield return null;
 
 
-        this.allTrainData = trainingImages.ToArray();
+        this.allData = trainingImages;
         this.evaluateData = evalImages.ToArray();
 
         //Start the training
-        StartCoroutine(trainNetwork());
+        if (importSettings.useLabel)
+        {
+            StartCoroutine(trainNetwork());
+        } else
+        {
+            StartCoroutine(MemoryTrainNetwork());
+        }
+       
 
     }
 
@@ -603,6 +638,187 @@ public class TrainNeuralNetwork : MonoBehaviour
 
     }
 
+    public IEnumerator MemoryTrainNetwork ()
+    {
+
+        createLine("Starting Network Training");
+        yield return null;
+
+        createLine("Network Info: " + "Size:" + sizeToString(networkSettings.networkSize) + "  NumPerBatch: " + networkSettings.dataPerBatch + "  LearnRate: " + networkSettings.initialLearningRate);
+
+        NeuralNetwork neuro = new NeuralNetwork(networkSettings.networkSize, Activation.GetActivationFromType(networkSettings.activationType), Activation.GetActivationFromType(networkSettings.outputActivationType), Cost.GetCostFromType(networkSettings.costType));
+
+        //Set Cost function
+        neuro.SetCostFunction(Cost.GetCostFromType(Cost.CostType.MeanSquareError));
+
+        int numOfBatches = Mathf.FloorToInt(MemoryImageNum / networkSettings.dataPerBatch);
+
+        List<string> batchPaths = new List<string>();
+
+        for (int epoch = 0; epoch < numOfEpochs; epoch++)
+        {
+            createLine(numOfBatches + "");
+
+            if (epoch % reshuffleIndex == 0)
+            {
+                //Get the path of each file
+
+                string folderPath = importSettings.folderPath;
+                string evalFolderPath = folderPath + "/" + "EvalData";
+                string trainFolderPath = folderPath + "/" + "TrainFolder";
+                string batchesFolderPath = folderPath + "/" + "Batches";
+
+                List<string> paths = new List<string>();
+
+                if (Directory.Exists(trainFolderPath))
+                {
+                    DirectoryInfo d = new DirectoryInfo(trainFolderPath);
+
+                    foreach (var file in d.GetFiles("*.bytes"))
+                    {
+                       //Add the path of the file
+                        paths.Add(file.FullName);
+                    }
+                }
+
+                //Shuffle the paths
+
+                yield return StartCoroutine(ShuffleArray(paths));
+
+                createLine("Batching");
+
+                for (int i = 0; i < numOfBatches; i++)
+                {
+
+                    createLine("Creating Batch " + i);
+
+                    List<ImageData> imgs = new List<ImageData>();
+                   // Batch batch = new Batch(networkSettings.dataPerBatch);
+
+                    for (int j = 0; j < networkSettings.dataPerBatch; j++)
+                    {
+                        //batches[i].addData(ImageHelper.GetImage(importSettings, paths[i * networkSettings.dataPerBatch + j]).GetDataPoint(), j);
+                        imgs.Add(ImageHelper.GetImage(importSettings, paths[i * networkSettings.dataPerBatch + j]));
+                    }
+
+                    //Create a folder, and save all 3 
+
+                    string batchPath = batchesFolderPath + "/" + "Batch-" + i;
+
+                    batchPaths.Add(batchPath);
+
+                    var batchFile = Directory.CreateDirectory(batchPath);
+
+                    ImageHelper.SaveImages(batchPath, "BatchImages", imgs);
+
+                    ImageHelper.SaveLabels(batchPath, "BatchLabels", imgs);
+
+                    ImageHelper.SaveOutputs(batchPath, "BatchOutputs", imgs);
+
+                    Percent.text = (float)i / numOfBatches * 100 + " % ";
+                    PercentSlider.value = (float)i / numOfBatches;
+                    yield return null;
+                }
+            }
+
+            createLine("Epoch: " + epoch);
+
+            yield return StartCoroutine(ShuffleArray(batchPaths));
+
+            createLine("Teaching");
+
+            //Teaching
+            for (int i = 0; i < numOfBatches; i++)
+            {
+                //Debug.Log("Loading Batch");
+                ImageHelper.DataFile dataFile = new ImageHelper.DataFile();
+
+                string pathToBatch = batchPaths[i].Replace("Assets/Resources/", "");
+
+                ResourceRequest imageFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchImages");
+                yield return imageFileRequest;
+                dataFile.imageFile = imageFileRequest.asset as TextAsset;
+
+                ResourceRequest labelFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchLabels");
+                yield return labelFileRequest;
+                dataFile.labelFile = labelFileRequest.asset as TextAsset;
+
+                ResourceRequest outputFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchOutputs");
+                yield return outputFileRequest;
+                dataFile.outputFile = outputFileRequest.asset as TextAsset;
+              
+
+                //Load Batch
+
+                ImageData[] Images = ImageHelper.LoadBatchImages(dataFile , importSettings).ToArray();
+
+                //Maybe this will erase it?
+                dataFile = new ImageHelper.DataFile();
+
+                Batch batch = new Batch(networkSettings.dataPerBatch);
+
+                batch.ImageDataToBatch(Images);
+
+                neuro.Learn(batch.data, (1.0 / (1.0 + networkSettings.learnRateDecay * epoch)) * networkSettings.initialLearningRate, networkSettings.regularization, networkSettings.momentum);
+
+                Percent.text = "Teaching: " + (float)i / numOfBatches * 100 + " % ";
+                PercentSlider.value = (float)i / numOfBatches;
+                yield return null;
+            }
+
+            //Need to load the evaluate data
+
+
+            //Load one of the batches
+            if (true)
+            {
+                ImageHelper.DataFile dataFile = new ImageHelper.DataFile();
+
+                string pathToBatch = batchPaths[0].Replace("Assets/Resources/", "");
+
+                ResourceRequest imageFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchImages");
+                yield return imageFileRequest;
+                dataFile.imageFile = imageFileRequest.asset as TextAsset;
+
+                ResourceRequest labelFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchLabels");
+                yield return labelFileRequest;
+                dataFile.labelFile = labelFileRequest.asset as TextAsset;
+
+                ResourceRequest outputFileRequest = Resources.LoadAsync<TextAsset>(pathToBatch + "/" + "BatchOutputs");
+                yield return outputFileRequest;
+                dataFile.outputFile = outputFileRequest.asset as TextAsset;
+
+                ImageData[] Images = ImageHelper.LoadBatchImages(dataFile, importSettings).ToArray();
+
+                DataPoint[] evalData = new DataPoint[Images.Length];
+
+                for (int i = 0; i < evalData.Length; i ++)
+                {
+                    evalData[i] = Images[i].GetDataPoint();
+                }
+
+                yield return StartCoroutine(displayCost(true, true, neuro, evalData));
+            }
+            
+
+
+            //Load Batch
+
+            
+
+
+
+
+
+            
+
+            //yield return StartCoroutine(EvaluateNetwork(neuro, evaluateData));
+
+        }
+
+    }
+
+
     //
     //Train Network
     //
@@ -639,8 +855,6 @@ public class TrainNeuralNetwork : MonoBehaviour
 
         for (int epoch = 0; epoch < numOfEpochs; epoch++)
         {
-
-
             if (epoch % reshuffleIndex == 0)
             {
 
@@ -1028,8 +1242,9 @@ public class TrainNeuralNetwork : MonoBehaviour
         {
             if (all)
             {
-
-                // createLine("All Cost After: " + neuro.Cost(data));
+                double cost = neuro.GetCost(data);
+                createLine("All Cost After: " + cost);
+                Debug.Log("Cost: " + cost);
                 yield return null;
             }
             else
@@ -1142,6 +1357,29 @@ public class TrainNeuralNetwork : MonoBehaviour
         createLine("Saved");
     }
 
+    public IEnumerator ShuffleArray(List<string> data)
+    {
+        int elementsRemainingToShuffle = data.Count;
+        int randomIndex = 0;
+        System.Random prng = new System.Random();
+
+        while (elementsRemainingToShuffle > 1)
+        {
+            // Choose a random element from array
+            randomIndex = prng.Next(0, elementsRemainingToShuffle);
+            string chosenElement = data[randomIndex];
+
+            // Swap the randomly chosen element with the last unshuffled element in the array
+            elementsRemainingToShuffle--;
+            data[randomIndex] = data[elementsRemainingToShuffle];
+            data[elementsRemainingToShuffle] = chosenElement;
+
+            Percent.text = "Shuffling Data: " + (float)(data.Count - elementsRemainingToShuffle) / data.Count * 100 + " % ";
+            PercentSlider.value = (float)(data.Count - elementsRemainingToShuffle) / data.Count;
+            yield return null;
+        }
+    }
+
     public IEnumerator ShuffleArray(List<DataPoint> data)
     {
         int elementsRemainingToShuffle = data.Count;
@@ -1249,20 +1487,39 @@ public class TrainNeuralNetwork : MonoBehaviour
             (int, double[]) classify = neuro.Classify(data[i].inputs);
 
 
-
-            //int classify = neuro.Classify(data[i].inputs);
-            int label = data[i].label;
-
-            Debug.Log(classify.Item1 + " : " + label);
-
-            if (classify.Item1 == label)
+            if (newMode)
             {
-                accuracy++;
+                //0 = minx
+                //1 = miny
+                //2 = maxx
+                //3 = maxy
+                Vector2 minGuess = new Vector2((float)classify.Item2[0], (float)classify.Item2[1]);
+                Vector2 maxGuess = new Vector2((float)classify.Item2[2], (float)classify.Item2[3]);
+
+
+                Vector2 min = new Vector2((float)data[i].expectedOutputs[0], (float)data[i].expectedOutputs[1]);
+                Vector2 max = new Vector2((float)data[i].expectedOutputs[2], (float)data[i].expectedOutputs[3]);
+
+
+                Debug.Log("Guess: " + minGuess + " " + maxGuess + "    to    : " + min + " " + max);
             }
             else
             {
-                dataToImage(data[i], classify.ToString(), errorImagePath, i);
+                //int classify = neuro.Classify(data[i].inputs);
+                int label = data[i].label;
+
+                Debug.Log(classify.Item1 + " : " + label);
+
+                if (classify.Item1 == label)
+                {
+                    accuracy++;
+                }
+                else
+                {
+                    dataToImage(data[i], classify.ToString(), errorImagePath, i);
+                }
             }
+
             Percent.text = "Evaluating: " + (float)i / data.Length * 100 + " % ";
             PercentSlider.value = (float)i / data.Length;
             yield return null;

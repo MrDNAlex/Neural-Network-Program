@@ -22,9 +22,17 @@ public class ImageData
 
     public ImageData(Texture2D image, double[] outputs, int label, bool useLabel = true, bool greyScale = false)
     {
-        this.numPixels = image.width * image.height;
+       
 
         this.greyScale = greyScale;
+        if (greyScale)
+        {
+            this.numPixels = image.width * image.height;
+        } else
+        {
+            this.numPixels = image.width * image.height * 3;
+        }
+       
 
         imgSize = new Vector2Int(image.width, image.height);
 
@@ -41,6 +49,10 @@ public class ImageData
         {
             this.label = label;
         }
+
+        Debug.Log(pixelVals.Length);
+        Debug.Log(greyScale);
+
     }
 
     public ImageData (double[] pixelVals, double[] outputs, int label, Vector2Int imgSize, bool useLabel = true, bool greyScale = false)
@@ -57,7 +69,6 @@ public class ImageData
         //Save expected outputs
         expectedOutputs = outputs;
 
-
         this.useLabel = useLabel;
         //Save Label
         if (useLabel)
@@ -67,7 +78,7 @@ public class ImageData
     }
 
 
-    double[] TextureToPixels(Texture2D image)
+    public double[] TextureToPixels(Texture2D image)
     {
         List<double> values = new List<double>();
 
@@ -105,7 +116,7 @@ public class ImageData
 
         if (greyScale)
         {
-            for (int i = 0; i < pixelVals.Length; i = i++)
+            for (int i = 0; i < pixelVals.Length; i++)
             {
 
                 //get colour
@@ -187,7 +198,6 @@ public class ImageData
 
         //Maybe try converting everything into an array/list of colors (just in case no grayscale) and then it has to convert to get the index of the right pixel
         //Then you apply the edit in the same way
-
 
         double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
         texture = ApplyScale(texture, (float)scale, whiteBackground);

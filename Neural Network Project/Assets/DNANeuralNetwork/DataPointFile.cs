@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace DNANeuralNetwork
+namespace DNANeuralNet
 {
     [System.Serializable]
     public class DataPointFile 

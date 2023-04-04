@@ -889,21 +889,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   importSettings:
     files:
-    - imageFile: {fileID: 4900000, guid: 3b03e05d691e607448f5aa90d1a8a728, type: 3}
-      labelFile: {fileID: 4900000, guid: 34ba3b5a69e608c4fbdd47ebbd68bacd, type: 3}
-      outputFile: {fileID: 4900000, guid: b1ef8387004cd0f42b388a0fd808e7c2, type: 3}
-    imageSize: {x: 28, y: 28}
-    numOfOutputs: 10
-    greyScale: 1
-    useLabel: 1
-    editImages: 1
+    - imageFile: {fileID: 4900000, guid: cbadb4f921d9f944ba7ac8e5e5e9d39d, type: 3}
+      labelFile: {fileID: 4900000, guid: 6ab4e87155b8fc943bfd2381fd72f945, type: 3}
+      outputFile: {fileID: 4900000, guid: ebe355563517f1d489bdc44fd0812a81, type: 3}
+    imageSize: {x: 852, y: 480}
+    numOfOutputs: 4
+    greyScale: 0
+    useLabel: 0
+    editImages: 0
+    saveMemory: 1
+    folderPath: Assets/Resources/Ball Recognition/DataPoints
   loadFromFile: 1
+  newMode: 1
   networkSettings:
-    networkSize: 100300002c0100000a000000
+    networkSize: 80b812009001000004000000
     activationType: 2
-    outputActivationType: 0
-    costType: 1
-    initialLearningRate: 0.05
+    outputActivationType: 2
+    costType: 0
+    initialLearningRate: 0.1
     learnRateDecay: 0.075
     dataPerBatch: 32
     momentum: 0.9
@@ -928,20 +931,20 @@ MonoBehaviour:
   - ImageProcessing/7
   - ImageProcessing/8
   - ImageProcessing/9
-  useFolders: 1
-  processImages: 1
+  useFolders: 0
+  processImages: 0
   saveImportedTrainingImages: 0
   maxCopies: 1
   minCopies: 1
   whiteBackground: 0
-  outputNum: 10
+  outputNum: 4
   reshuffleIndex: 10
   numOfEpochs: 100
-  trainingSplit: 0.85
+  trainingSplit: 0.9
   exportPath: Assets/Resources/NeuralNetworks
   errorImagePath: Assets/Resources/ErrorImages
   imageProcessingPath: Assets/Resources/ImageProcessing
-  fileName: TestingNewSystem
+  fileName: BallRec
   saveErrorImg: 0
   saveImageProcessing: 0
   StartBTN: {fileID: 1770273862}

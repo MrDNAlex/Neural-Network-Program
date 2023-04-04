@@ -217,7 +217,7 @@ public class NetworkLearnData
 }
 */
 
-namespace DNANeuralNetwork
+namespace DNANeuralNet
 {
     [System.Serializable]
     public class NeuralNetwork
@@ -279,6 +279,20 @@ namespace DNANeuralNetwork
                 inputs = layer.CalculateOutputs(inputs);
             }
             return inputs;
+        }
+
+        public double GetCost(DataPoint[] data)
+        {
+            double costVal = 0;
+            foreach (DataPoint d in data)
+            {
+                (int predictedClass, double[] outputs) = Classify(d.inputs);
+                costVal += cost.CostFunction(outputs, d.expectedOutputs);
+                
+            }
+            costVal = costVal / data.Length;
+
+            return costVal;
         }
 
         public void Learn(DataPoint[] trainingData, double learnRate, double regularization = 0, double momentum = 0)

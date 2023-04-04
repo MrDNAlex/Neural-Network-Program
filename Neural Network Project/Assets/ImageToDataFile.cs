@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
-using DNANeuralNetwork;
+using DNANeuralNet;
 using System.IO;
 
 using UnityEngine.Rendering;

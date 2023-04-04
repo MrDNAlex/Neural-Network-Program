@@ -22,4 +22,16 @@ public class Batch
     {
         this.data = data;
     }
+
+    public void ImageDataToBatch (ImageData[] imgs)
+    {
+        if (imgs.Length == data.Length)
+        {
+            for (int i = 0; i < size; i ++)
+            {
+                addData(imgs[i].GetDataPoint(), i);
+            }
+        }
+    }
+
 }

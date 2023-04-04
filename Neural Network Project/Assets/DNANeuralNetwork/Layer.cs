@@ -513,7 +513,7 @@ public enum Cost
 }
 */
 
-namespace DNANeuralNetwork
+namespace DNANeuralNet
 {
     [System.Serializable]
     public class Layer
@@ -721,5 +721,32 @@ namespace DNANeuralNetwork
         }
 
     }
+
+    //Use inheritance for the programming game and to adapt layers for the convolutional neural network
+/*
+    public class DNALayer
+    {
+
+        public void idk ()
+        {
+
+        }
+
+
+
+    }
+
+
+    public class ConvLayer : DNALayer
+    {
+        public ConvLayer ()
+        {
+            DNALayer lay = new ConvLayer();
+        }
+    }
+*/
+
+
+
 }
 
