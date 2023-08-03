@@ -23,14 +23,14 @@ public class MatrixTesting : MonoBehaviour
     void Start()
     {
 
-        /*
+        
         DNAMatrix mat1 = DNAMatrix.Increment(Mat1Dim);
 
         DNAMatrix mat2 = DNAMatrix.Increment(Mat2Dim);
 
       startTime = System.DateTime.UtcNow;
 
-        DNAMatrix newMat = mat1 * mat2;
+        //DNAMatrix newMat = mat1 * mat2;
 
         endTime = System.DateTime.UtcNow;
 
@@ -44,7 +44,9 @@ public class MatrixTesting : MonoBehaviour
 
         Debug.Log("Total Time elapsed GPU (Matrix Multiplication) (" + mat1.matrixDimensions.x + "x" + mat1.matrixDimensions.y + "*" + mat2.matrixDimensions.x + "x" + mat2.matrixDimensions.y + "): " + (endTime - startTime).TotalMilliseconds + "(MilliSeconds)");
 
-        */
+        
+
+        /*
 
         DNANeuralNetwork neuro = new DNANeuralNetwork(network);
 
@@ -94,6 +96,8 @@ public class MatrixTesting : MonoBehaviour
         {
             Debug.Log(DNAMatrix.displayMat(mat));
         }
+
+        */
 
         // Debug.Log(neuro.layers[2].iLayer.getOutputSize(size));
         //float[] mat1 = new float[16];

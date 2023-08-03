@@ -53,18 +53,11 @@ double dotProduct(int hIndex, int wIndex)
 [numthreads(16, 8, 8)]
 void CSMain(uint id : SV_GroupIndex)
 {
-   
-    //Yeah SV_GroupIndex is exactly what we wanted
-    
-    //So from here let's do newMatrixVals[id3 ] = dotProduct(reverseCalc y, reverseCalc x)
-    
     uint yIndex = id.x / newMatDim[1];
     
     uint xIndex = id.x % newMatDim[1];
     
-    
     setNewMatValue(yIndex, xIndex, dotProduct(yIndex, xIndex));
-    
 }
 
 
