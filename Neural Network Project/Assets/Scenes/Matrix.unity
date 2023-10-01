@@ -314,9 +314,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 638bd117689e4cd4a8ad4bd4f327fbe8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Mat1Dim: {x: 4000, y: 4000}
-  Mat2Dim: {x: 4000, y: 4000}
-  shader: {fileID: 7200000, guid: 3ce2bd12b09acc249aed3ee42be0bd5d, type: 3}
+  Mat1Dim: {x: 1, y: 1226880}
+  Mat2Dim: {x: 1226880, y: 218}
+  shader: {fileID: 7200000, guid: 7354047d8b71cf2479ca894280dfd572, type: 3}
   image: {fileID: 2800000, guid: ad082df6ca4de82458bb93da3de72f8d, type: 3}
   network:
     inputSize: {x: 28, y: 28}
