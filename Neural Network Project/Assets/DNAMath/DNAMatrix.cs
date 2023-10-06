@@ -7,38 +7,188 @@ using UnityEditor;
 
 namespace DNAMath
 {
+    /// <summary>
+    /// Custom Matrix Class developped for working on the GPU and with DNANeuralNetworks
+    /// </summary>
     public class DNAMatrix
     {
-        //Maybe make a custom struct to make things less confusing
-        //  2 x 3
-        // 0 0 0
-        // 0 0 0 
-
-        //x = y
-        //y = x
+        // 0--------> Width
+        // |
+        // |
+        // |
+        // Height
 
 
-        // 2 x 3
-        // 3 x 1 
-        //
-        // 14
-        // 32
+        public static ComputeShader shader;
 
+        /// <summary>
+        /// Describes the number of rows the matrix has
+        /// </summary>
+        private int _height;
 
-        // 1 x 3
-        // 3 x 2
-
-        // 22 28
-
-        
-        /*
-        struct DNAVector
+        public int Height
         {
-            bool vertical;
-            double[] values; 
+            get
+            {
+                return _height;
+            }
         }
-        */
 
+        /// <summary>
+        /// Describes the number of columns the matrix has
+        /// </summary>
+        private int _width;
+
+        public int Width
+        {
+            get
+            {
+                return _width;
+            }
+        }
+
+        /// <summary>
+        /// A list of all values contained in the matrix
+        /// </summary>
+        private double[] _values;
+
+        public double[] Values
+        {
+            get
+            {
+                return _values;
+            }
+            set
+            {
+                _values = value;
+            }
+        }
+
+        public DNAMatrix (int height, int width)
+        {
+            this._width = width;
+            this._height = height;
+
+            _values = new double[width * height];
+        }
+
+        /// <summary>
+        /// Indexer allowing us to get access and sey  to a value using array notation
+        /// </summary>
+        /// <param name="height"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public double this[int height, int width]
+        {
+            get
+            {
+                return _values[GetFlatIndex(height, width)];
+            }
+            set
+            {
+                _values[GetFlatIndex(height, width)] = value;
+            }
+        }
+
+        public double this[int index]
+        {
+            get
+            {
+                
+                return _values[index];
+            }
+        }
+
+
+        /// <summary>
+        /// Initializes a matrix that counts from 1 - the number of values based on the dimensions
+        /// </summary>
+        /// <param name="height"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public static DNAMatrix Increment(int height, int width)
+        {
+            DNAMatrix matrix = new DNAMatrix(height, width);
+
+            for (int i = 0; i < width * height; i ++)
+            {
+                matrix._values[i] = i;
+            }
+          
+            return matrix;
+        }
+
+        /// <summary>
+        /// Sets the value at the given height and width index
+        /// </summary>
+        /// <param name="heightIndex"></param>
+        /// <param name="widthIndex"></param>
+        /// <param name="val"></param>
+        public void SetValue(int heightIndex, int widthIndex, double val)
+        {
+            this._values[GetFlatIndex(heightIndex, widthIndex)] = val;
+        }
+
+        /// <summary>
+        /// Add to the values at the given height and width index
+        /// </summary>
+        /// <param name="heightIndex"></param>
+        /// <param name="widthIndex"></param>
+        /// <param name="val"></param>
+        public void AddValue(int heightIndex, int widthIndex, double val)
+        {
+            this._values[GetFlatIndex(heightIndex, widthIndex)] += val;
+        }
+
+        /// <summary>
+        /// Gets the value at the given height and width index
+        /// </summary>
+        /// <param name="heightIndex"></param>
+        /// <param name="widthIndex"></param>
+        /// <returns></returns>
+        public double GetValue(int heightIndex, int widthIndex)
+        {
+            return _values[GetFlatIndex(heightIndex, widthIndex)];
+        }
+
+        /// <summary>
+        /// Returns the flat index of a value 
+        /// </summary>
+        /// <param name="heightIndex"></param>
+        /// <param name="widthIndex"></param>
+        /// <returns></returns>
+        public int GetFlatIndex(int heightIndex, int widthIndex)
+        {
+            return heightIndex * Width + widthIndex;
+        }
+
+        public static DNAMatrix operator +(DNAMatrix mat1, DNAMatrix mat2)
+        {
+            DNAMatrix newMat = new DNAMatrix(new Vector2Int(0, 0));
+
+            if (mat1.matrixDimensions == mat2.matrixDimensions)
+            {
+                newMat = new DNAMatrix(mat1.matrixDimensions);
+
+                for (int height = 0; height < newMat.matrixDimensions.x; height++)
+                {
+                    for (int width = 0; width < newMat.matrixDimensions.y; width++)
+                    {
+                        newMat.setValue(height, width, mat1.getValue(height, width) + mat2.getValue(height, width));
+                    }
+                }
+            }
+            else
+            {
+                Debug.Log("Error, Dimensions don't match");
+            }
+
+            return newMat;
+        }
+
+       
+
+        /*
         struct GPUMatrix
         {
             public Vector2Int matrixDimensions;
@@ -339,7 +489,7 @@ namespace DNAMath
 
             return newMatrix;
         }
-
+        */
     }
 }
 

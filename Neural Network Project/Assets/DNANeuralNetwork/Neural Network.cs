@@ -340,7 +340,7 @@ namespace DNANeuralNet
             outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data.expectedOutputs, cost);
             outputLayer.UpdateGradients(outputLearnData);
 
-            //Update All Hidden laer gradients
+            //Update All Hidden layer gradients
             for (int i = outputLayerIndex - 1; i >= 0; i--)
             {
                 LayerLearnData layerLearnData = learnData.layerData[i];
