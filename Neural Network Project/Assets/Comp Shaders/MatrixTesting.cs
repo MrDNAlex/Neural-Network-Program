@@ -10,11 +10,13 @@ public class MatrixTesting : MonoBehaviour
 
     [SerializeField] Vector2Int Mat2Dim;
 
+    [SerializeField] int[] layerSizes;
+
     [SerializeField] ComputeShader shader;
 
     [SerializeField] Texture2D image;
 
-    public DNANeuralNetworkInfo network;
+   // public DNANeuralNetworkInfo network;
 
     System.DateTime startTime;
     System.DateTime endTime;
@@ -23,14 +25,31 @@ public class MatrixTesting : MonoBehaviour
     void Start()
     {
 
-        
-        DNAMatrix mat1 = DNAMatrix.Increment(Mat1Dim);
+        DNANeuralNetwork neuro = new DNANeuralNetwork(layerSizes);
 
-        DNAMatrix mat2 = DNAMatrix.Increment(Mat2Dim);
+        DNAMatrix inputImg = new DNAMatrix(image.height * image.width, 1);
+
+        for (int i = 0; i < image.width; i++)
+        {
+            for (int j = 0; j < image.height; j++)
+            {
+                inputImg[j, i] = image.GetPixel(i, j).r;
+            }
+        }
+
+        (int index, DNAMatrix output) = neuro.Classify(inputImg);
+
+        output.DisplayMat();
+
+        /*
+
+        DNAMatrix mat1 = new DNAMatrix(Mat1Dim.x, Mat1Dim.y);
+
+        DNAMatrix mat2 = new DNAMatrix(Mat2Dim.x, Mat2Dim.y);
 
       startTime = System.DateTime.UtcNow;
 
-        DNAMatrix newMat = mat1 * mat2;
+        //DNAMatrix newMat = mat1 * mat2;
 
         endTime = System.DateTime.UtcNow;
 
@@ -42,11 +61,11 @@ public class MatrixTesting : MonoBehaviour
 
         endTime = System.DateTime.UtcNow;
 
-        string output = " --> (" + mat.matrixDimensions.x + " x " + mat.matrixDimensions.y + ")";
+        string output = " --> (" + mat.Height + " x " + mat.Width + ")";
 
-        Debug.Log("Total Time elapsed GPU (Matrix Multiplication) (" + mat1.matrixDimensions.x + "x" + mat1.matrixDimensions.y + "*" + mat2.matrixDimensions.x + "x" + mat2.matrixDimensions.y + ") "+ output + ": " + (endTime - startTime).TotalMilliseconds + "(MilliSeconds)");
-
+        Debug.Log("Total Time elapsed GPU (Setup + Matrix Multiplication) (" + mat1.Height + "x" + mat1.Width + "*" + mat2.Height + "x" + mat2.Width + ") "+ output + ": " + (endTime - startTime).TotalMilliseconds + "(MilliSeconds)");
         
+        */
         /*
         DNANeuralNetwork neuro = new DNANeuralNetwork(network);
 

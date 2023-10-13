@@ -8,11 +8,11 @@ namespace DNANeuralNet
 {
     public class DNADataPoint
     {
-        public DNAMatrix[] inputs;
+        public DNAMatrix inputs;
         public DNAMatrix expectedOutputs;
         public int label;
 
-        public DNADataPoint(DNAMatrix[] inputs, int label, int numLabels)
+        public DNADataPoint(DNAMatrix inputs, int label, int numLabels)
         {
             this.inputs = inputs;
             this.label = label;
@@ -21,12 +21,12 @@ namespace DNANeuralNet
 
         public static DNAMatrix CreateOneHot(int index, int num)
         {
-            DNAMatrix expOut = new DNAMatrix(new Vector2Int(1, num));
-            expOut.setValue(0, index, 1);
+            DNAMatrix expOut = new DNAMatrix(1, index);
+            expOut[0, index] = 1;
             return expOut;
         }
 
-        public DNADataPoint(DNAMatrix[] inputs, DNAMatrix outputs)
+        public DNADataPoint(DNAMatrix inputs, DNAMatrix outputs)
         {
             this.inputs = inputs;
             this.expectedOutputs = outputs;

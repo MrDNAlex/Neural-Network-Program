@@ -4,10 +4,8 @@ using UnityEngine;
 
 namespace DNAImageProcessing
 {
-
     public class DNAImageProcessing
     {
-
         static bool whiteBackground;
         public static void ExpandImage(Texture2D image, int scaleFactor, string name)
         {
