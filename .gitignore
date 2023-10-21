@@ -10,6 +10,9 @@
 /Neural Network Project/[Ll]ogs/
 /Neural Network Project/[Uu]ser[Ss]ettings/
 
+
+/Neural Network Project\Assets\Resources\ConvertedData\MNISTDataPoints
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /Neural Network Project/[Mm]emoryCaptures/
@@ -70,3 +73,5 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+Neural Network Project/Assets/Resources/ConvertedData/MNISTDataPoints.json
+Neural Network Project/Assets/Resources/ConvertedData/MNISTDataPoints.json

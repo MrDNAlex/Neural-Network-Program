@@ -21,8 +21,8 @@ namespace DNANeuralNet
 
         public static DNAMatrix CreateOneHot(int index, int num)
         {
-            DNAMatrix expOut = new DNAMatrix(1, index);
-            expOut[0, index] = 1;
+            DNAMatrix expOut = new DNAMatrix(num, 1);
+            expOut[index, 0] = 1;
             return expOut;
         }
 

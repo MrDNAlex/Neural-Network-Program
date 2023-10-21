@@ -6,10 +6,18 @@ using DNAMath;
 
 namespace DNANeuralNet
 {
+    [System.Serializable]
     public class DNALayer
     {
-        public int NumNodesIn { get; private set; }
-        public int NumNodesOut { get; private set; }
+        [SerializeField]
+        private int _numNodeIn;
+
+        [SerializeField]
+        private int _numNodeOut;
+
+        public int NumNodesIn { get { return _numNodeIn; } set { _numNodeIn = value; } }
+
+        public int NumNodesOut { get { return _numNodeOut; } set { _numNodeOut = value; } }
 
         public DNAMatrix weights;
         public DNAMatrix biases;
@@ -22,8 +30,8 @@ namespace DNANeuralNet
         private DNAMatrix _weightVelocities;
         private DNAMatrix _biasVelocities;
 
+        [SerializeField]
         public IActivation activation;
-
 
         public DNALayer (int numNodesIn, int numNodesOut)
         {
@@ -85,7 +93,6 @@ namespace DNANeuralNet
             _costGradientBias = new DNAMatrix(_costGradientBias.Height, _costGradientBias.Width);
         }
 
-
         public void CalculateOutputLayerNodeValues(DNALayerLearnData layerLearnData, DNAMatrix expectedOutputs, ICost cost)
         {
             for (int i = 0; i < layerLearnData.nodeValues.Values.Length; i++)
@@ -96,11 +103,9 @@ namespace DNANeuralNet
             }
         }
 
-        //this one might be iffy
         public void CalculateHiddenLayerNodeValues(DNALayerLearnData layerLearnData, DNALayer oldLayer, DNAMatrix oldNodeValues)
         {
-
-            DNAMatrix newNodeValues = oldNodeValues * oldLayer.weights.Transpose();
+            DNAMatrix newNodeValues = oldLayer.weights.Transpose() * oldNodeValues;
 
             for (int newNodeIndex = 0; newNodeIndex < newNodeValues.Values.Length; newNodeIndex++)
             {
@@ -108,59 +113,23 @@ namespace DNANeuralNet
             }
 
             layerLearnData.nodeValues = newNodeValues;
-
-                /*
-            for (int newNodeIndex = 0; newNodeIndex < numNodesOut; newNodeIndex++)
-            {
-                double newNodeValue = 0;
-                for (int oldNodeIndex = 0; oldNodeIndex < oldNodeValues.Length; oldNodeIndex++)
-                {
-                    //Get the partial derivative of weight with respect to input
-                    double weightedInputDerivative = oldLayer.GetWeight(newNodeIndex, oldNodeIndex);
-                    newNodeValue += weightedInputDerivative * oldNodeValues[oldNodeIndex];
-                }
-                newNodeValue *= activation.Derivative(layerLearnData.weightedInputs, newNodeIndex);
-                layerLearnData.nodeValues[newNodeIndex] = newNodeValue;
-            }
-                */
+<<<<<<< HEAD
+=======
+            
+>>>>>>> parent of 621d94303d (Functional DNAMatrix Use)
         }
+
         public void UpdateGradients(DNALayerLearnData layerLearnData)
         {
             lock (_costGradientWeight)
             {
-
                 _costGradientWeight += layerLearnData.nodeValues * layerLearnData.inputs.Transpose();
-
-                /*
-                for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
-                {
-                    double nodeValue = layerLearnData.nodeValues[nodeOut];
-                    for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++)
-                    {
-                        // Evaluate the partial derivative: cost / weight of current connection
-                        double derivativeCostWrtWeight = layerLearnData.inputs[nodeIn] * nodeValue;
-                        // The costGradientW array stores these partial derivatives for each weight.
-                        // Note: the derivative is being added to the array here because ultimately we want
-                        // to calculate the average gradient across all the data in the training batch
-                        costGradientWeight[GetFlatWeightIndex(nodeIn, nodeOut)] += derivativeCostWrtWeight;
-                    }
-                }
-                */
             }
 
             // Update cost gradient with respect to biases (lock for multithreading)
             lock (_costGradientBias)
             {
                 _costGradientBias += layerLearnData.nodeValues;
-
-                /*
-                for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++)
-                {
-                    // Evaluate partial derivative: cost / bias
-                    double derivativeCostWrtBias = 1 * layerLearnData.nodeValues[nodeOut];
-                    costGradientBias[nodeOut] += derivativeCostWrtBias;
-                }
-                */
             }
         }
 
@@ -177,11 +146,6 @@ namespace DNANeuralNet
                 weights[weightIndex] = RandomInNormalDistribution(rng, 0, 1) / Mathf.Sqrt(NumNodesIn);
             }
 
-            for (int biasIndex = 0; biasIndex < biases.Values.Length; biasIndex++)
-            {
-                biases[biasIndex] = RandomInNormalDistribution(rng, 0, 1) / Mathf.Sqrt(NumNodesIn);
-            }
-
             double RandomInNormalDistribution(System.Random rng, double mean, double standardDeviation)
             {
                 double x1 = 1 - rng.NextDouble();
@@ -191,8 +155,5 @@ namespace DNANeuralNet
                 return y1 * standardDeviation + mean;
             }
         }
-
     }
-    
 }
-

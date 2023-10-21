@@ -6,12 +6,9 @@ using DNAMath;
 
 namespace DNANeuralNet
 {
+    [System.Serializable]
     public class DNANeuralNetwork
     {
-
-        //Layers
-        //Cost
-        //
         public DNALayer[] layers;
         public int[] layerSizes;
 
@@ -94,11 +91,10 @@ namespace DNANeuralNet
                 }
             }
 
-            System.Threading.Tasks.Parallel.For(0, trainingData.Length, (i) =>
+            for (int i = 0; i < trainingData.Length; i++)
             {
                 UpdateGradients(trainingData[i], batchLearnData[i]);
-            });
-
+            }
 
             // Update weights and biases based on the calculated gradients
             for (int i = 0; i < layers.Length; i++)
@@ -109,9 +105,6 @@ namespace DNANeuralNet
 
         void UpdateGradients(DNADataPoint data, DNANetworkLearnData learnData)
         {
-            // Feed data through the network to calculate outputs.
-            // Save all inputs/weightedinputs/activations along the way to use for backpropagation.
-
             DNAMatrix inputsToNextLayer = data.inputs;
 
             for (int i = 0; i < layers.Length; i++)

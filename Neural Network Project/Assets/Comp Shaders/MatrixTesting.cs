@@ -6,15 +6,17 @@ using DNANeuralNet;
 
 public class MatrixTesting : MonoBehaviour
 {
-    [SerializeField] Vector2Int Mat1Dim;
+    [SerializeField] Vector2Int matrixADim;
 
-    [SerializeField] Vector2Int Mat2Dim;
+    [SerializeField] Vector2Int matrixBDim;
 
     [SerializeField] int[] layerSizes;
 
     [SerializeField] ComputeShader shader;
 
-    [SerializeField] Texture2D image;
+    [SerializeField] List<Texture2D> images;
+
+    List<DNAMatrix> data = new List<DNAMatrix>();
 
    // public DNANeuralNetworkInfo network;
 
@@ -27,160 +29,48 @@ public class MatrixTesting : MonoBehaviour
 
         DNANeuralNetwork neuro = new DNANeuralNetwork(layerSizes);
 
-        DNAMatrix inputImg = new DNAMatrix(image.height * image.width, 1);
-
-        for (int i = 0; i < image.width; i++)
+        foreach (Texture2D img in images)
         {
-            for (int j = 0; j < image.height; j++)
+            DNAMatrix matrix = new DNAMatrix(img.height * img.width, 1);
+
+            for (int i = 0; i < img.height; i++)
             {
-                inputImg[j, i] = image.GetPixel(i, j).r;
+                for (int j = 0; j < img.width; j++)
+                {
+                    matrix[i * img.width + j, 0] = img.GetPixel(j, i).r;
+                }
             }
+
+            data.Add(matrix);
         }
 
-        (int index, DNAMatrix output) = neuro.Classify(inputImg);
-
-        output.DisplayMat();
-
-        /*
-
-        DNAMatrix mat1 = new DNAMatrix(Mat1Dim.x, Mat1Dim.y);
-
-        DNAMatrix mat2 = new DNAMatrix(Mat2Dim.x, Mat2Dim.y);
-
-      startTime = System.DateTime.UtcNow;
-
-        //DNAMatrix newMat = mat1 * mat2;
-
-        endTime = System.DateTime.UtcNow;
-
-        Debug.Log("Total Time elapsed CPU (MilliSeconds): " + (endTime - startTime).TotalMilliseconds);
-
-        startTime = System.DateTime.UtcNow;
-
-        DNAMatrix mat = mat1.multMatrixGPU(mat1, mat2);
-
-        endTime = System.DateTime.UtcNow;
-
-        string output = " --> (" + mat.Height + " x " + mat.Width + ")";
-
-        Debug.Log("Total Time elapsed GPU (Setup + Matrix Multiplication) (" + mat1.Height + "x" + mat1.Width + "*" + mat2.Height + "x" + mat2.Width + ") "+ output + ": " + (endTime - startTime).TotalMilliseconds + "(MilliSeconds)");
-        
-        */
-        /*
-        DNANeuralNetwork neuro = new DNANeuralNetwork(network);
-
-        Debug.Log(neuro.layers[0].iLayer.getOutputSize(new Vector2Int(28, 28)));
-
-        Vector2Int size = neuro.layers[0].iLayer.getOutputSize(new Vector2Int(28, 28));
-
-        Debug.Log(neuro.layers[1].iLayer.getOutputSize(size));
-
-        size = neuro.layers[1].iLayer.getOutputSize(size);
-
-        Debug.Log(neuro.layers[2].iLayer.getOutputSize(size));
-        size = neuro.layers[2].iLayer.getOutputSize(size);
-
-        Debug.Log(neuro.layers[3].iLayer.getOutputSize(size));
-        size = neuro.layers[3].iLayer.getOutputSize(size);
-
-        Debug.Log(neuro.layers[4].iLayer.getOutputSize(size));
-        size = neuro.layers[4].iLayer.getOutputSize(size);
-
-        DNAMatrix matrix = new DNAMatrix(new Vector2Int(image.width, image.height));
-
-        for (int i = 0; i < image.width; i ++)
-        {
-            for (int j = 0; j < image.height; j++)
-            {
-                matrix.setValue(i, j, image.GetPixel(i, j).r);
-            }
-        }
-
-        for (int i = 0; i < matrix.values.Length; i ++)
-        {
-            if (matrix.values[i] < 0.1)
-            {
-                matrix.values[i] = 0;
-            } else
-            {
-                matrix.values[i] = 1;
-            }
-        }
-
-        Debug.Log(DNAMatrix.displayMat(matrix));
-
-        DNAMatrix[] outputs = neuro.CalculateOutputs(matrix);
-
-        foreach (DNAMatrix mat in outputs)
-        {
-            Debug.Log(DNAMatrix.displayMat(mat));
-        }
-
-        // Debug.Log(neuro.layers[2].iLayer.getOutputSize(size));
-        //float[] mat1 = new float[16];
-
-        // float[] mat2 = new float[24];
-        */
-
-        /*
-        mat1[0] = 1;
-        mat1[1] = 2;
-        mat1[2] = 3;
-        mat1[3] = 4;
-        mat1[4] = 5;
-        mat1[5] = 6;
-        mat1[6] = 7;
-        mat1[7] = 8;
-        mat1[8] = 9;
-        mat1[9] = 10;
-        mat1[10] = 11;
-        mat1[11] = 12;
-        mat1[12] = 13;
-        mat1[13] = 14;
-        mat1[14] = 15;
-        mat1[15] = 16;
+        // foreach (DNAMatrix mat in data)
+        // {
+        //     (int index, DNAMatrix output) = neuro.Classify(mat);
+        //  }
 
 
-        mat2[0] = 1;
-        mat2[1] = 2;
-        mat2[2] = 3;
-        mat2[3] = 4;
-        mat2[4] = 5;
-        mat2[5] = 6;
-        mat2[6] = 7;
-        mat2[7] = 8;
-        mat2[8] = 9;
-        mat2[9] = 10;
-        mat2[10] = 11;
-        mat2[11] = 12;
-        mat2[12] = 13;
-        mat2[13] = 14;
-        mat2[14] = 15;
-        mat2[15] = 16;
-        mat2[16] = 17;
-        mat2[17] = 18;
-        mat2[18] = 19;
-        mat2[19] = 20;
-        mat2[20] = 21;
-        mat2[21] = 22;
-        mat2[22] = 23;
-        mat2[23] = 24;
-        */
 
-        /*
-        for (int i = 0; i < mat1.Length; i++)
-        {
-            mat1[i] = Random.Range(-1.0f, 1.0f) * 50;
-        }
+        // DNAMatrix matrixA = new DNAMatrix(matrixADim.x, matrixADim.y);
+        DNAMatrix matrixA = DNAMatrix.Increment(matrixADim.x, matrixADim.y);
 
-        for (int i = 0; i < mat2.Length; i++)
-        {
-            mat2[i] = Random.Range(-1.0f, 1.0f) * 50;
-        }
+        DNAMatrix matrixB = DNAMatrix.Increment(matrixBDim.x, matrixBDim.y);
+
+        startTime = System.DateTime.Now;
+
+        //DNAMatrix result = matrixA * matrixB;
+        DNAMatrix result = DNAMatrix.multMatrixGPU(matrixA, matrixB);
+
+        endTime = System.DateTime.Now;
+        Debug.Log($"Matrix Multiplication: ({matrixA.Height}x{matrixA.Width}) * ({matrixB.Height}x{matrixB.Width})");
+        Debug.Log("Total Time elapsed GPU (MilliSeconds): " + (endTime - startTime).TotalMilliseconds);
         
 
-        float[] newMat = matMult(mat1, mat2); ;
-        */
+       // result.DisplayMat();
+
+      
+
+       // result2.DisplayMat();
 
 
     }
@@ -196,21 +86,21 @@ public class MatrixTesting : MonoBehaviour
         return hIndex * width + wIndex;
     }
 
-    float[] matMult(float[] mat1, float[] mat2)
+    float[] matMult(float[] matrixA, float[] matrixB)
     {
         Debug.Log("Hi");
         float[] newMat = new float[0];
-        if (Mat1Dim.x == Mat2Dim.y)
+        if (matrixADim.x == matrixBDim.y)
         {
             Debug.Log("Hi 2");
             Vector2Int dim;
-            if (Mat1Dim.x >= Mat2Dim.x && Mat1Dim.y >= Mat2Dim.y)
+            if (matrixADim.x >= matrixBDim.x && matrixADim.y >= matrixBDim.y)
             {
-                dim = Mat1Dim;
+                dim = matrixADim;
             }
             else
             {
-                dim = Mat2Dim;
+                dim = matrixBDim;
             }
 
             newMat = new float[dim.x * dim.y];
@@ -222,7 +112,7 @@ public class MatrixTesting : MonoBehaviour
                 for (int width = 0; width < dim.x; width++)
                 {
 
-                    newMat[getIndex(width, height, dim.x)] = dotProduct(mat1, mat2, width, height, Mat1Dim.x);
+                    newMat[getIndex(width, height, dim.x)] = dotProduct(matrixA, matrixB, width, height, matrixADim.x);
                 }
             }
 
@@ -246,7 +136,7 @@ public class MatrixTesting : MonoBehaviour
         return newMat;
     }
 
-    float dotProduct(float[] mat1, float[] mat2, int wIndex, int hIndex, int length)
+    float dotProduct(float[] matrixA, float[] matrixB, int wIndex, int hIndex, int length)
     {
         float result = 0;
 
@@ -254,7 +144,7 @@ public class MatrixTesting : MonoBehaviour
         {
             
 
-            result += mat1[getIndex(i, hIndex, Mat1Dim.x)] * mat2[getIndex(wIndex, i, Mat2Dim.x)];
+            result += matrixA[getIndex(i, hIndex, matrixADim.x)] * matrixB[getIndex(wIndex, i, matrixBDim.x)];
         }
 
         return result;

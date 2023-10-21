@@ -5,9 +5,10 @@ using static System.Math;
 
 namespace DNANeuralNet
 {
+	[System.Serializable]
 	public readonly struct Activation
 	{
-
+		[System.Serializable]
 		public enum ActivationType
 		{
 			Sigmoid,
@@ -37,6 +38,7 @@ namespace DNANeuralNet
 			}
 		}
 
+		[System.Serializable]
 		public readonly struct Sigmoid : IActivation
 		{
 			public double Activate(double[] inputs, int index)
@@ -56,6 +58,7 @@ namespace DNANeuralNet
 			}
 		}
 
+		[System.Serializable]
 		public readonly struct TanH : IActivation
 		{
 			public double Activate(double[] inputs, int index)
@@ -77,7 +80,7 @@ namespace DNANeuralNet
 			}
 		}
 
-
+		[System.Serializable]
 		public readonly struct ReLU : IActivation
 		{
 			public double Activate(double[] inputs, int index)
@@ -96,6 +99,7 @@ namespace DNANeuralNet
 			}
 		}
 
+		[System.Serializable]
 		public readonly struct SiLU : IActivation
 		{
 			public double Activate(double[] inputs, int index)
@@ -115,7 +119,7 @@ namespace DNANeuralNet
 			}
 		}
 
-
+		[System.Serializable]
 		public readonly struct Softmax : IActivation
 		{
 			public double Activate(double[] inputs, int index)

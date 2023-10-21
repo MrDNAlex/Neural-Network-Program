@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DNANeuralNet;
+using DNAMath;
 
 
 [System.Serializable]
@@ -182,6 +184,25 @@ public class ImageData
             return new DataPoint(pixelVals, expectedOutputs);
         }
         
+    }
+
+    public DNADataPoint GetDNADataPoint(bool singleLabel = false)
+    {
+        DNAMatrix pixelVals = new DNAMatrix(imgSize.x, imgSize.y);
+        DNAMatrix expectedOutputs = new DNAMatrix(this.expectedOutputs.Length, 1);
+
+        expectedOutputs.Values = this.expectedOutputs;
+        pixelVals.Values = this.pixelVals;
+
+        if (singleLabel)
+        {
+            return new DNADataPoint(pixelVals, label, expectedOutputs.Values.Length);
+        }
+        else
+        {
+            return new DNADataPoint(pixelVals, expectedOutputs);
+        }
+
     }
 
     public void EditImage (bool whiteBackground)
