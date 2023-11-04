@@ -1484,6 +1484,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   newMode: 0
+  NeuralNetworkName: MatrixNeuro
   trainingFolderPaths:
   - ImageProcessing/0
   - ImageProcessing/1

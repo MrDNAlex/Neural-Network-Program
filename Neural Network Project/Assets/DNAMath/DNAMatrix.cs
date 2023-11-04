@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using UnityEditor;
-
+using System;
 
 namespace DNAMath
 {
+
     /// <summary>
     /// Custom Matrix Class developped for working on the GPU and with DNANeuralNetworks
     /// </summary>
@@ -32,6 +33,11 @@ namespace DNAMath
         public static ComputeShader matrixMultScript;
 
         /// <summary>
+        /// Shader Script that runs Matrix Multiplication on the GPU using Floats
+        /// </summary>
+        public static ComputeShader matrixMultFloatScript;
+
+        /// <summary>
         /// Shader Script that runs Matrix Addition on the GPU
         /// </summary>
         public static ComputeShader matrixAdditionScript;
@@ -48,6 +54,7 @@ namespace DNAMath
         public static void loadAssets()
         {
             matrixMultScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixMultiplicationGPU.compute");
+            matrixMultScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixMultiplicationGPUFloat.compute");
             matrixAdditionScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixAdditionGPU.compute");
             matrixSubstractionScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixSubstractionGPU.compute");
         }
@@ -406,8 +413,10 @@ namespace DNAMath
         {
             DNAMatrix newMat = new DNAMatrix(0, 0);
 
-            if (matrixMultScript != null)
+            if (matrixMultScript != null && SystemInfo.deviceType == DeviceType.Desktop)
                 newMat = multMatrixGPU(matrixA, matrixB);
+            else if (matrixMultScript != null && SystemInfo.deviceType == DeviceType.Handheld)
+                newMat = multMatrixGPUFloat(matrixA, matrixB);
             else
             {
                 //Check if matrixA Width is equal to matrixB Height
@@ -478,6 +487,68 @@ namespace DNAMath
 
                 matrixAVals.SetData(matrixA.Values);
                 matrixBVals.SetData(matrixB.Values);
+
+                matrixADim.SetData(new uint[] { (uint)matrixA.Width, (uint)matrixA.Height });
+                matrixBDim.SetData(new uint[] { (uint)matrixB.Width, (uint)matrixB.Height });
+                newMatrixDim.SetData(new uint[] { (uint)newMat.Width, (uint)newMat.Height });
+
+
+                computeShader.SetBuffer(0, "matrixA", matrixAVals);
+                computeShader.SetBuffer(0, "matrixB", matrixBVals);
+                computeShader.SetBuffer(0, "newMatrix", newMatrixVals);
+
+                computeShader.SetBuffer(0, "matrixDimsA", matrixADim);
+                computeShader.SetBuffer(0, "matrixDimsB", matrixBDim);
+                computeShader.SetBuffer(0, "newMatrixDims", newMatrixDim);
+
+                //Calculate
+                computeShader.Dispatch(0, newMat.Width, newMat.Height, 1);
+
+                //Receaive Result
+                newMatrixVals.GetData(newMat.Values);
+
+                //Get rid of memory
+                matrixAVals.Dispose();
+                matrixBVals.Dispose();
+                newMatrixVals.Dispose();
+
+                matrixADim.Dispose();
+                matrixBDim.Dispose();
+                newMatrixDim.Dispose();
+            }
+            else
+                Debug.Log("Error, Dimensions don't match");
+
+            return newMat;
+        }
+
+        /// <summary>
+        /// Handles a Matrix Multiplication by handing it off to the GPU, this makes it crazy fast
+        /// </summary>
+        /// <param name="matrixA"></param>
+        /// <param name="matrixB"></param>
+        /// <returns></returns>
+        public static DNAMatrix multMatrixGPUFloat(DNAMatrix matrixA, DNAMatrix matrixB)
+        {
+            DNAMatrix newMat = new DNAMatrix(0, 0);
+            if (matrixA.Width == matrixB.Height)
+            {
+                newMat = new DNAMatrix(matrixA.Height, matrixB.Width);
+
+                ComputeShader computeShader = matrixMultScript;
+
+                // Create compute buffers
+                ComputeBuffer matrixAVals = new ComputeBuffer(matrixA.Length, sizeof(float));
+                ComputeBuffer matrixBVals = new ComputeBuffer(matrixB.Length, sizeof(float));
+                ComputeBuffer newMatrixVals = new ComputeBuffer(newMat.Length, sizeof(float));
+
+                ComputeBuffer newMatrixDim = new ComputeBuffer(1, sizeof(uint) * 2);
+                ComputeBuffer matrixADim = new ComputeBuffer(1, sizeof(uint) * 2);
+                ComputeBuffer matrixBDim = new ComputeBuffer(1, sizeof(uint) * 2);
+
+
+                matrixAVals.SetData(new DNAMatrixFloat(matrixA).Values);
+                matrixBVals.SetData(new DNAMatrixFloat(matrixB).Values);
 
                 matrixADim.SetData(new uint[] { (uint)matrixA.Width, (uint)matrixA.Height });
                 matrixBDim.SetData(new uint[] { (uint)matrixB.Width, (uint)matrixB.Height });

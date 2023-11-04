@@ -113,10 +113,6 @@ namespace DNANeuralNet
             }
 
             layerLearnData.nodeValues = newNodeValues;
-<<<<<<< HEAD
-=======
-            
->>>>>>> parent of 621d94303d (Functional DNAMatrix Use)
         }
 
         public void UpdateGradients(DNALayerLearnData layerLearnData)

@@ -86,7 +86,6 @@ namespace DNANeuralNet
 				return CostType.CrossEntropy;
 			}
 		}
-
 	}
 }
 
