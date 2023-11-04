@@ -31,13 +31,13 @@ namespace DNANeuralNet
         private DNAMatrix _biasVelocities;
 
         [SerializeField]
-        public IActivation activation;
+        public IDNAActivation activation;
 
-        public DNALayer (int numNodesIn, int numNodesOut)
+        public DNALayer(int numNodesIn, int numNodesOut)
         {
             this.NumNodesIn = numNodesIn;
             this.NumNodesOut = numNodesOut;
-            activation = new Activation.Sigmoid();
+            activation = new DNAActivation.Sigmoid();
 
             weights = new DNAMatrix(numNodesOut, numNodesIn);
             _costGradientWeight = new DNAMatrix(numNodesOut, numNodesIn);
@@ -50,16 +50,9 @@ namespace DNANeuralNet
             InitializeRandomWeights(new System.Random());
         }
 
-        public DNAMatrix CalculateOutputs (DNAMatrix inputs)
+        public DNAMatrix CalculateOutputs(DNAMatrix inputs)
         {
-            DNAMatrix outputs = (weights * inputs) + biases;
-
-            for (int outputNode = 0; outputNode < outputs.Values.Length; outputNode ++)
-            {
-                outputs[outputNode] = activation.Activate(outputs.Values, outputNode);
-            }
-
-            return outputs;
+            return activation.Activate((weights * inputs) + biases);
         }
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs, DNALayerLearnData learnData)
@@ -70,10 +63,8 @@ namespace DNANeuralNet
             learnData.weightedInputs = (weights * inputs) + biases;
 
             //Apply Activation Function
-            for (int outputNode = 0; outputNode < NumNodesOut; outputNode++)
-            {
-                learnData.activations[outputNode] = activation.Activate(learnData.weightedInputs.Values, outputNode);
-            }
+            learnData.activations = activation.Activate(learnData.weightedInputs);
+
             return learnData.activations;
         }
 
@@ -84,7 +75,7 @@ namespace DNANeuralNet
             //Calculate Velocities and Apply them to the respective matrices
             _weightVelocities = _weightVelocities * momentum - _costGradientWeight * learnRate;
             weights = weights * weightDecay + _weightVelocities;
-            
+
             _biasVelocities = _biasVelocities * momentum - _costGradientBias * learnRate;
             biases += _biasVelocities;
 
@@ -93,24 +84,23 @@ namespace DNANeuralNet
             _costGradientBias = new DNAMatrix(_costGradientBias.Height, _costGradientBias.Width);
         }
 
-        public void CalculateOutputLayerNodeValues(DNALayerLearnData layerLearnData, DNAMatrix expectedOutputs, ICost cost)
+        public void CalculateOutputLayerNodeValues(DNALayerLearnData layerLearnData, DNAMatrix expectedOutputs, IDNACost cost)
         {
+            DNAMatrix costDerivative = cost.CostDerivative(layerLearnData.activations, expectedOutputs);
+            DNAMatrix activationDerivative = activation.Derivative(layerLearnData.weightedInputs);
+
             for (int i = 0; i < layerLearnData.nodeValues.Values.Length; i++)
-            {
-                double costDerivative = cost.CostDerivative(layerLearnData.activations[i], expectedOutputs[i]);
-                double activationDerivative = activation.Derivative(layerLearnData.weightedInputs.Values, i);
-                layerLearnData.nodeValues[i] = costDerivative * activationDerivative;
-            }
+                layerLearnData.nodeValues[i] = costDerivative[i] * activationDerivative[i];
         }
 
         public void CalculateHiddenLayerNodeValues(DNALayerLearnData layerLearnData, DNALayer oldLayer, DNAMatrix oldNodeValues)
         {
             DNAMatrix newNodeValues = oldLayer.weights.Transpose() * oldNodeValues;
 
+            DNAMatrix derivative = activation.Derivative(layerLearnData.weightedInputs);
+
             for (int newNodeIndex = 0; newNodeIndex < newNodeValues.Values.Length; newNodeIndex++)
-            {
-                newNodeValues[newNodeIndex] *= activation.Derivative(layerLearnData.weightedInputs.Values, newNodeIndex);
-            }
+                newNodeValues[newNodeIndex] *= derivative[newNodeIndex];
 
             layerLearnData.nodeValues = newNodeValues;
         }
@@ -129,7 +119,7 @@ namespace DNANeuralNet
             }
         }
 
-        public void SetActivationFunction(IActivation activation)
+        public void SetActivationFunction(IDNAActivation activation)
         {
             this.activation = activation;
         }

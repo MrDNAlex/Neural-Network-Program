@@ -12,7 +12,7 @@ namespace DNANeuralNet
         public DNALayer[] layers;
         public int[] layerSizes;
 
-        public ICost cost;
+        public IDNACost cost;
         System.Random rng;
         DNANetworkLearnData[] batchLearnData;
 
@@ -28,10 +28,10 @@ namespace DNANeuralNet
                 layers[i] = new DNALayer(layerSizes[i], layerSizes[i + 1]);
             }
 
-            cost = new Cost.MeanSquaredError();
+            cost = new DNACost.MeanSquaredError();
         }
 
-        public DNANeuralNetwork(int[] layerSizes, IActivation activation, IActivation outputLayerActivation, ICost cost)
+        public DNANeuralNetwork(int[] layerSizes, IDNAActivation activation, IDNAActivation outputLayerActivation, IDNACost cost)
         {
             this.layerSizes = layerSizes;
             rng = new System.Random();
@@ -43,7 +43,7 @@ namespace DNANeuralNet
                 layers[i] = new DNALayer(layerSizes[i], layerSizes[i + 1]);
             }
 
-            cost = new Cost.MeanSquaredError();
+            cost = new DNACost.MeanSquaredError();
 
             SetActivationFunction(activation, outputLayerActivation);
             SetCostFunction(cost);
@@ -72,8 +72,7 @@ namespace DNANeuralNet
             foreach (DNADataPoint d in data)
             {
                 (int predictedClass, DNAMatrix outputs) = Classify(d.inputs);
-                costVal += cost.CostFunction(outputs.Values, d.expectedOutputs.Values);
-
+                costVal += cost.CostFunction(outputs, d.expectedOutputs);
             }
             costVal = costVal / data.Length;
 
@@ -133,17 +132,17 @@ namespace DNANeuralNet
         }
 
 
-        public void SetCostFunction(ICost costFunction)
+        public void SetCostFunction(IDNACost costFunction)
         {
             this.cost = costFunction;
         }
 
-        public void SetActivationFunction(IActivation activation)
+        public void SetActivationFunction(IDNAActivation activation)
         {
             SetActivationFunction(activation, activation);
         }
 
-        public void SetActivationFunction(IActivation activation, IActivation outputLayerActivation)
+        public void SetActivationFunction(IDNAActivation activation, IDNAActivation outputLayerActivation)
         {
             for (int i = 0; i < layers.Length - 1; i++)
             {
