@@ -39,7 +39,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     [SerializeField] string errorImagePath;
 
     [Header("Network Settings")]
-    [SerializeField] NeuralNetworkSettings networkSettings;
+    [SerializeField] DNANeuralNetworkSettings networkSettings;
 
     [Header("Image To Data")]
     List<DNADataPoint> allData = new List<DNADataPoint>(); //Will need to be cleared (I think)
@@ -178,10 +178,10 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         //Create a new Neural Network
         //NeuralNetwork neuro = new NeuralNetwork(networkSettings.neuralNetSize, hiddenActivation, outputActivation, costType);
 
-        DNANeuralNetwork neuro = new DNANeuralNetwork(networkSettings.networkSize, Activation.GetActivationFromType(networkSettings.activationType), Activation.GetActivationFromType(networkSettings.outputActivationType), Cost.GetCostFromType(networkSettings.costType));
+        DNANeuralNetwork neuro = new DNANeuralNetwork(networkSettings.networkSize, DNAActivation.GetActivationFromType(networkSettings.activationType), DNAActivation.GetActivationFromType(networkSettings.outputActivationType), DNACost.GetCostFromType(networkSettings.costType));
 
         //Set Cost function
-        neuro.SetCostFunction(Cost.GetCostFromType(Cost.CostType.MeanSquareError));
+        neuro.SetCostFunction(DNACost.GetCostFromType(networkSettings.costType));
 
         currentLearningRate = networkSettings.initialLearningRate;
 
