@@ -54,7 +54,7 @@ namespace DNAMath
         public static void loadAssets()
         {
             matrixMultScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixMultiplicationGPU.compute");
-            matrixMultScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixMultiplicationGPUFloat.compute");
+            matrixMultFloatScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixMultiplicationGPUFloat.compute");
             matrixAdditionScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixAdditionGPU.compute");
             matrixSubstractionScript = AssetDatabase.LoadAssetAtPath<ComputeShader>("Assets/DNAMath/MatrixSubstractionGPU.compute");
         }
@@ -415,7 +415,7 @@ namespace DNAMath
 
             if (matrixMultScript != null && SystemInfo.deviceType == DeviceType.Desktop)
                 newMat = multMatrixGPU(matrixA, matrixB);
-            else if (matrixMultScript != null && SystemInfo.deviceType == DeviceType.Handheld)
+            else if (matrixMultFloatScript != null && SystemInfo.deviceType == DeviceType.Handheld)
                 newMat = multMatrixGPUFloat(matrixA, matrixB);
             else
             {
