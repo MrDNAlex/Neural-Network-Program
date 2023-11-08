@@ -66,6 +66,11 @@ namespace DNANeuralNet
 			{
 				return ActivationType.Sigmoid;
 			}
+
+			public string GetActivationFunctionName ()
+            {
+				return "sigmoid";
+            }
 		}
 
 		[System.Serializable]
@@ -102,6 +107,11 @@ namespace DNANeuralNet
 			{
 				return ActivationType.TanH;
 			}
+
+			public string GetActivationFunctionName()
+			{
+				return "tanh";
+			}
 		}
 
 		[System.Serializable]
@@ -130,6 +140,11 @@ namespace DNANeuralNet
 			public ActivationType GetActivationType()
 			{
 				return ActivationType.ReLU;
+			}
+
+			public string GetActivationFunctionName()
+			{
+				return "relu";
 			}
 		}
 
@@ -162,6 +177,11 @@ namespace DNANeuralNet
 			public ActivationType GetActivationType()
 			{
 				return ActivationType.SiLU;
+			}
+
+			public string GetActivationFunctionName()
+			{
+				return "silu";
 			}
 		}
 
@@ -204,6 +224,11 @@ namespace DNANeuralNet
 			public ActivationType GetActivationType()
 			{
 				return ActivationType.Softmax;
+			}
+
+			public string GetActivationFunctionName()
+			{
+				return "softmax";
 			}
 		}
 	}

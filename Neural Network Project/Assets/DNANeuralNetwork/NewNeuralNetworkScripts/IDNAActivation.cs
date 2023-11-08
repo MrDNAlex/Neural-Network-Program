@@ -12,6 +12,8 @@ namespace DNANeuralNet
         DNAMatrix Derivative(DNAMatrix matrix);
 
         DNAActivation.ActivationType GetActivationType();
+
+        string GetActivationFunctionName();
     }
 }
 

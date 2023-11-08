@@ -245,16 +245,21 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
             // StartCoroutine(displayCost(true, false, neuro, evaluateData));
 
+            System.DateTime startTime = System.DateTime.UtcNow;
+            
             //Teaching
             for (int i = 0; i < batches.Length; i++)
             {
-                //(1.0 / (1.0 + networkSettings.learnRateDecay * epoch)) *
+               
                 neuro.Learn(batches[i].data,  currentLearningRate, networkSettings.regularization, networkSettings.momentum);
 
                 Percent.text = "Teaching: " + (float)i / numOfBatches * 100 + " % ";
                 PercentSlider.value = (float)i / numOfBatches;
                 yield return null;
             }
+            System.DateTime endTime = System.DateTime.UtcNow;
+
+            Debug.Log("Training Time (sec): " + (endTime - startTime).TotalSeconds);
 
             //  StartCoroutine(displayCost(false, true, neuro, evaluateData));
 

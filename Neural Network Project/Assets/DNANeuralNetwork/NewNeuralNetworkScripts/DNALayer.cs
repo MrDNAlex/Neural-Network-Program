@@ -33,6 +33,13 @@ namespace DNANeuralNet
         [SerializeField]
         public IDNAActivation activation;
 
+        //Compute Buffers
+        ComputeBuffer weightsVals;
+        ComputeBuffer biasVals;
+
+        ComputeBuffer weightsDim = new ComputeBuffer(1, sizeof(uint) * 2);
+        ComputeBuffer biasDim = new ComputeBuffer(1, sizeof(uint) * 2);
+
         public DNALayer(int numNodesIn, int numNodesOut)
         {
             this.NumNodesIn = numNodesIn;
@@ -48,22 +55,47 @@ namespace DNANeuralNet
             _biasVelocities = new DNAMatrix(numNodesOut, 1);
 
             InitializeRandomWeights(new System.Random());
+
+            weightsVals = new ComputeBuffer(weights.Length, sizeof(double));
+            biasVals = new ComputeBuffer(biases.Length, sizeof(double));
+
+            //Something went wrong
+
+
+            UpdateComputeBuffers();
+
         }
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs)
         {
-            return activation.Activate((weights * inputs) + biases);
+            if (layerOutputGPU != null)
+                return layerOutputCalculationGPU(inputs);
+            else
+                return activation.Activate((weights * inputs) + biases);
         }
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs, DNALayerLearnData learnData)
         {
             learnData.inputs = inputs;
 
-            //Calculate the outputs
-            learnData.weightedInputs = (weights * inputs) + biases;
+            if (layerOutputGPU != null)
+            {
+                (DNAMatrix weightedInputs, DNAMatrix activation) = layerOutputCalculationTrainingGPU(inputs);
 
-            //Apply Activation Function
-            learnData.activations = activation.Activate(learnData.weightedInputs);
+                //Calculate the outputs
+                learnData.weightedInputs = weightedInputs;
+
+                //Apply Activation Function
+                learnData.activations = activation;
+            }
+            else
+            {
+                //Calculate the outputs
+                learnData.weightedInputs = (weights * inputs) + biases;
+
+                //Apply Activation Function
+                learnData.activations = activation.Activate(learnData.weightedInputs);
+            }
 
             return learnData.activations;
         }
@@ -82,6 +114,8 @@ namespace DNANeuralNet
             //Reset Gradients
             _costGradientWeight = new DNAMatrix(_costGradientWeight.Height, _costGradientWeight.Width);
             _costGradientBias = new DNAMatrix(_costGradientBias.Height, _costGradientBias.Width);
+
+            UpdateComputeBuffers();
         }
 
         public void CalculateOutputLayerNodeValues(DNALayerLearnData layerLearnData, DNAMatrix expectedOutputs, IDNACost cost)
@@ -124,7 +158,6 @@ namespace DNANeuralNet
             this.activation = activation;
         }
 
-
         public void InitializeRandomWeights(System.Random rng)
         {
             for (int weightIndex = 0; weightIndex < weights.Values.Length; weightIndex++)
@@ -141,5 +174,138 @@ namespace DNANeuralNet
                 return y1 * standardDeviation + mean;
             }
         }
+
+        private void UpdateComputeBuffers()
+        {
+            weightsDim.SetData(new uint[] { (uint)weights.Width, (uint)weights.Height });
+            biasDim.SetData(new uint[] { (uint)biases.Width, (uint)biases.Height });
+
+            weightsVals.SetData(weights.Values);
+            biasVals.SetData(biases.Values);
+        }
+
+        public static ComputeShader layerOutputGPU;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        public static void loadAssets()
+        {
+            layerOutputGPU = Resources.Load<ComputeShader>("LayerOutputCalculation");
+
+            if (layerOutputGPU != null)
+            {
+                Debug.Log("Loaded!");
+            }
+        }
+
+        private DNAMatrix layerOutputCalculationGPU(DNAMatrix inputs)
+        {
+            DNAMatrix activation = new DNAMatrix(0, 0);
+            if (weights.Width == inputs.Height)
+            {
+                activation = new DNAMatrix(weights.Height, inputs.Width);
+
+                ComputeShader computeShader = layerOutputGPU;
+
+                //Setup Compute Buffers
+                ComputeBuffer inputsVals = new ComputeBuffer(inputs.Length, sizeof(double));
+
+                ComputeBuffer inputsDim = new ComputeBuffer(1, sizeof(uint) * 2);
+
+                ComputeBuffer activationVals = new ComputeBuffer(activation.Length, sizeof(double));
+                ComputeBuffer weightedInputVals = new ComputeBuffer(activation.Length, sizeof(double));
+
+                //Set Data
+                inputsVals.SetData(inputs.Values);
+
+                inputsDim.SetData(new uint[] { (uint)inputs.Width, (uint)inputs.Height });
+
+                //Set Buffers
+                computeShader.SetBuffer(0, "weights", weightsVals);
+                computeShader.SetBuffer(0, "inputs", inputsVals);
+                computeShader.SetBuffer(0, "bias", biasVals);
+
+                computeShader.SetBuffer(0, "weightsDim", weightsDim);
+                computeShader.SetBuffer(0, "inputsDim", inputsDim);
+                computeShader.SetBuffer(0, "biasDim", biasDim);
+
+                computeShader.SetBuffer(0, "weightedInputs", weightedInputVals);
+                computeShader.SetBuffer(0, "activation", activationVals);
+
+                //Calculate
+                computeShader.Dispatch(0, activation.Width, activation.Height, 1);
+
+                //Receaive Result
+                activationVals.GetData(activation.Values);
+
+                inputsVals.Release();
+                activationVals.Release();
+                weightedInputVals.Release();
+
+                inputsDim.Release();
+            }
+            else
+                Debug.Log("Error, Dimensions don't match");
+
+            return activation;
+        }
+
+        private (DNAMatrix weightedInputs, DNAMatrix activation) layerOutputCalculationTrainingGPU(DNAMatrix inputs)
+        {
+            DNAMatrix activation = new DNAMatrix(0, 0);
+            DNAMatrix weightedInputs = new DNAMatrix(0, 0);
+            if (weights.Width == inputs.Height)
+            {
+                activation = new DNAMatrix(weights.Height, inputs.Width);
+                weightedInputs = new DNAMatrix(weights.Height, inputs.Width);
+
+                ComputeShader computeShader = layerOutputGPU;
+
+                //Setup Compute Buffers
+                ComputeBuffer inputsVals = new ComputeBuffer(inputs.Length, sizeof(double));
+
+                ComputeBuffer inputsDim = new ComputeBuffer(1, sizeof(uint) * 2);
+
+                ComputeBuffer activationVals = new ComputeBuffer(activation.Length, sizeof(double));
+                ComputeBuffer weightedInputVals = new ComputeBuffer(activation.Length, sizeof(double));
+
+                //Set Data
+                inputsVals.SetData(inputs.Values);
+
+                weightsDim.SetData(new uint[] { (uint)weights.Width, (uint)weights.Height });
+                inputsDim.SetData(new uint[] { (uint)inputs.Width, (uint)inputs.Height });
+                biasDim.SetData(new uint[] { (uint)biases.Width, (uint)biases.Height });
+
+                //Set Buffers
+                computeShader.SetBuffer(0, "weights", weightsVals);
+                computeShader.SetBuffer(0, "inputs", inputsVals);
+                computeShader.SetBuffer(0, "bias", biasVals);
+
+                computeShader.SetBuffer(0, "weightsDim", weightsDim);
+                computeShader.SetBuffer(0, "inputsDim", inputsDim);
+                computeShader.SetBuffer(0, "biasDim", biasDim);
+
+                computeShader.SetBuffer(0, "weightedInputs", weightedInputVals);
+                computeShader.SetBuffer(0, "activation", activationVals);
+
+                //Calculate
+                computeShader.Dispatch(0, activation.Width, activation.Height, 1);
+
+                //Receaive Result
+                activationVals.GetData(activation.Values);
+                weightedInputVals.GetData(weightedInputs.Values);
+
+                inputsVals.Release();
+                activationVals.Release();
+                weightedInputVals.Release();
+
+                inputsDim.Release();
+            }
+            else
+                Debug.Log("Error, Dimensions don't match");
+
+            return (weightedInputs, activation);
+        }
+
+
     }
 }
