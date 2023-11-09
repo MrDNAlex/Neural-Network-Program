@@ -106,46 +106,50 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             for (int j = 0; j < newImages[i].Count; j++)
             {
                 System.Random rng = new System.Random(Random.Range(0, 1000));
-                Texture2D img = newImages[i][j];
+                
 
-                //Debug.Log(RandomInNormalDistribution(rng));
+                int subImages = (int)Random.Range(minCopies, maxCopies);
 
-                if (j >= testingIndex)
+                for (int g = 0; g < subImages; g ++)
                 {
-                    evalData.Add(imageToData(img, i, outputNum));
-                }
-                else
-                {
-                    //Check if we process the images
-                    if (processImages)
+                    Texture2D img = newImages[i][j];
+
+                    if (j >= testingIndex)
                     {
-                        //Maybe remove the thresholds
-                        //Process images individually
-
-                        double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
-
-                        img = ApplyScale(img, (float)scale);
-
-                        float angle = (float)RandomInNormalDistribution(rng) * 10;
-
-                        //Apply Rotation
-                        img = ApplyRotation(img, angle);
-
-                        //Generate offsetNumbers
-                        //Used to be 5
-                        int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10));
-                        int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
-
-                        //Apply Offset (max 1/3 width and height)
-                        img = ApplyOffset(img, offsetX, offsetY);
-
-                        //Apply Noise
-                        img = ApplyNoise(img);
+                        evalData.Add(imageToData(img, i, outputNum));
                     }
+                    else
+                    {
+                        //Check if we process the images
+                        if (processImages)
+                        {
+                            //Maybe remove the thresholds
+                            //Process images individually
 
-                    //Convert to Data point
-                    data.Add(imageToData(img, i, outputNum));
+                            double scale = 1 + RandomInNormalDistribution(rng) * 0.3;
 
+                            img = ApplyScale(img, (float)scale);
+
+                            float angle = (float)RandomInNormalDistribution(rng) * 20;
+
+                            //Apply Rotation
+                            img = ApplyRotation(img, angle);
+
+                            //Generate offsetNumbers
+                            //Used to be 5
+                            int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 4));
+                            int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 4));
+
+                            //Apply Offset (max 1/3 width and height)
+                            img = ApplyOffset(img, offsetX, offsetY);
+
+                            //Apply Noise
+                            img = ApplyNoise(img);
+                        }
+
+                        //Convert to Data point
+                        data.Add(imageToData(img, i, outputNum));
+                    }
                 }
 
                 Percent.text = (float)j / newImages[i].Count * 100 + " % ";
@@ -159,6 +163,8 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         }
 
         evaluateData = evalData.ToArray();
+
+        Debug.Log("Total Count :" + (data.Count + evalData.Count));
 
         StartCoroutine(trainNetwork());
 
@@ -465,7 +471,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         //Number determines the seed to use
         System.Random rng = new System.Random(Random.Range(0, 100000));
 
-        double noiseProbability = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble()) * 0.05f;
+        double noiseProbability = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble()) * 0.1f;
         double noiseStrength = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble());
 
         Texture2D newImage = image;

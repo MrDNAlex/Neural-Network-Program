@@ -59,11 +59,7 @@ namespace DNANeuralNet
             weightsVals = new ComputeBuffer(weights.Length, sizeof(double));
             biasVals = new ComputeBuffer(biases.Length, sizeof(double));
 
-            //Something went wrong
-
-
             UpdateComputeBuffers();
-
         }
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs)
