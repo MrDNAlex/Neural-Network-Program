@@ -1488,26 +1488,18 @@ MonoBehaviour:
   trainingFolderPaths:
   - ImageProcessing/0
   - ImageProcessing/1
-  - ImageProcessing/2
-  - ImageProcessing/3
-  - ImageProcessing/4
-  - ImageProcessing/5
-  - ImageProcessing/6
-  - ImageProcessing/7
-  - ImageProcessing/8
-  - ImageProcessing/9
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
-  maxCopies: 6
-  minCopies: 3
+  maxCopies: 1
+  minCopies: 1
   whiteBackground: 0
   reshuffleIndex: 5
   numOfEpochs: 70
   trainingSplit: 0.8
   errorImagePath: 
   networkSettings:
-    networkSize: 100300002c0100000a000000
+    networkSize: 100300002c01000002000000
     activationType: 0
     outputActivationType: 0
     costType: 0
@@ -1516,7 +1508,7 @@ MonoBehaviour:
     dataPerBatch: 32
     momentum: 0.9
     regularization: 0.1
-  outputNum: 10
+  outputNum: 2
   LoadImgsBTN: {fileID: 2137148501}
   TrainBTN: {fileID: 1977995373}
   Percent: {fileID: 1657550991}

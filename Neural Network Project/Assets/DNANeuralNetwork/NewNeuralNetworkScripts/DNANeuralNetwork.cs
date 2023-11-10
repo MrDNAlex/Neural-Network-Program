@@ -90,10 +90,14 @@ namespace DNANeuralNet
                 }
             }
 
+            /*
             for (int i = 0; i < trainingData.Length; i++)
             {
                 UpdateGradients(trainingData[i], batchLearnData[i]);
             }
+            */
+            
+            ParallelUpdateGradients(trainingData, batchLearnData);
 
             // Update weights and biases based on the calculated gradients
             for (int i = 0; i < layers.Length; i++)
@@ -102,14 +106,78 @@ namespace DNANeuralNet
             }
         }
 
+        void ParallelUpdateGradients(DNADataPoint[] data, DNANetworkLearnData[] learnData)
+        {
+            System.DateTime startTime = System.DateTime.Now;
+
+            DNAMatrix[] inputsToNextLayer = new DNAMatrix[data.Length];
+            DNALayerLearnData[][] layerDatas = new DNALayerLearnData[learnData[0].layerData.Length][];
+
+            for (int j = 0; j < learnData[0].layerData.Length; j++)
+            {
+                layerDatas[j] = new DNALayerLearnData[learnData.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    inputsToNextLayer[i] = data[i].inputs;
+                    layerDatas[j][i] = learnData[i].layerData[j];
+                }
+            }
+
+            System.DateTime format = System.DateTime.Now;
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                inputsToNextLayer = layers[i].ParallelCalculateOutputs(inputsToNextLayer, layerDatas[i]);
+            }
+
+            System.DateTime layerOperation = System.DateTime.Now;
+
+            for (int j = 0; j < data.Length; j++)
+            {
+                //Backpropogation
+                int outputLayerIndex = layers.Length - 1;
+                DNALayer outputLayer = layers[outputLayerIndex];
+                DNALayerLearnData outputLearnData = learnData[j].layerData[outputLayerIndex];
+
+                //Update output layer gradients
+                outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data[j].expectedOutputs, cost);
+                outputLayer.UpdateGradients(outputLearnData);
+
+                //Update All Hidden layer gradients
+                for (int i = outputLayerIndex - 1; i >= 0; i--)
+                {
+                    DNALayerLearnData layerLearnData = learnData[j].layerData[i];
+                    DNALayer hiddenLayer = layers[i];
+
+                    hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], learnData[j].layerData[i + 1].nodeValues);
+                    hiddenLayer.UpdateGradients(layerLearnData);
+                }
+            }
+
+            System.DateTime leftover = System.DateTime.Now;
+
+            double totalTime = (leftover - startTime).TotalSeconds;
+
+            double formatTime = 100.0 * (format - startTime).TotalSeconds / totalTime;
+            double layerTime = 100.0 * (layerOperation - format).TotalSeconds / totalTime;
+            double leftOverTime = 100.0 * (leftover - layerOperation).TotalSeconds / totalTime;
+
+            Debug.Log($"Format:{formatTime}    Layer Operation:{layerTime}     Left Over:{leftOverTime}");
+        }
+
         void UpdateGradients(DNADataPoint data, DNANetworkLearnData learnData)
         {
+            System.DateTime startTime = System.DateTime.Now;
+
             DNAMatrix inputsToNextLayer = data.inputs;
 
             for (int i = 0; i < layers.Length; i++)
             {
                 inputsToNextLayer = layers[i].CalculateOutputs(inputsToNextLayer, learnData.layerData[i]);
             }
+
+            System.DateTime layerOperation = System.DateTime.Now;
 
             //Backpropogation
             int outputLayerIndex = layers.Length - 1;
@@ -129,6 +197,15 @@ namespace DNANeuralNet
                 hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], learnData.layerData[i + 1].nodeValues);
                 hiddenLayer.UpdateGradients(layerLearnData);
             }
+
+            System.DateTime leftover = System.DateTime.Now;
+
+            double totalTime = (leftover - startTime).TotalSeconds;
+
+            double layerTime = 100.0 * (layerOperation - startTime).TotalSeconds / totalTime;
+            double leftOverTime = 100.0 * (leftover - layerOperation).TotalSeconds / totalTime;
+
+            Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
         }
 
 

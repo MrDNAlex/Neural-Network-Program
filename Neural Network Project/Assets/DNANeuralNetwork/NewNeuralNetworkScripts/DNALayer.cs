@@ -96,6 +96,24 @@ namespace DNANeuralNet
             return learnData.activations;
         }
 
+        public DNAMatrix[] ParallelCalculateOutputs(DNAMatrix[] inputs, DNALayerLearnData[] learnData)
+        {
+            (DNAMatrix[] weightedInputs, DNAMatrix[] activation) = parallelLayerOutputCalculationTrainingGPU(inputs);
+
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                learnData[i].inputs = inputs[i];
+
+                //Calculate the outputs
+                learnData[i].weightedInputs = weightedInputs[i];
+
+                //Apply Activation Function
+                learnData[i].activations = activation[i];
+            }
+
+            return activation;
+        }
+
         public void ApplyGradients(double learnRate, double regularization, double momentum)
         {
             double weightDecay = (1 - regularization * learnRate);
@@ -182,14 +200,21 @@ namespace DNANeuralNet
 
         public static ComputeShader layerOutputGPU;
 
+        public static ComputeShader parallelLayerOutputGPU;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         public static void loadAssets()
         {
             layerOutputGPU = Resources.Load<ComputeShader>("LayerOutputCalculation");
+            parallelLayerOutputGPU = Resources.Load<ComputeShader>("ParrallelLayerOperation");
 
             if (layerOutputGPU != null)
             {
                 Debug.Log("Loaded!");
+            }
+            if (parallelLayerOutputGPU != null)
+            {
+                Debug.Log("Parallel Loaded!");
             }
         }
 
@@ -300,6 +325,117 @@ namespace DNANeuralNet
                 Debug.Log("Error, Dimensions don't match");
 
             return (weightedInputs, activation);
+        }
+
+        private (DNAMatrix[] weightedInputs, DNAMatrix[] activation) parallelLayerOutputCalculationTrainingGPU(DNAMatrix[] inputs)
+        {
+            DNAMatrix[] activation = new DNAMatrix[inputs.Length];
+            DNAMatrix[] weightedInputs = new DNAMatrix[inputs.Length];
+            if (weights.Width == inputs[0].Height)
+            {
+                int inputsLength = inputs.Length * inputs[0].Length;
+                int outputsLength = inputs.Length * weights.Height * inputs[0].Width;
+
+                for (int i = 0; i < inputs.Length; i++)
+                {
+                    activation[i] = new DNAMatrix(weights.Height, inputs[0].Width);
+                    weightedInputs[i] = new DNAMatrix(weights.Height, inputs[0].Width);
+                }
+
+                ComputeShader computeShader = parallelLayerOutputGPU;
+
+                //Setup Compute Buffers
+                ComputeBuffer dimensions = new ComputeBuffer(3, sizeof(uint) * 2);
+
+                ComputeBuffer inputsVals = new ComputeBuffer(inputsLength, sizeof(double));
+
+                ComputeBuffer activationVals = new ComputeBuffer(outputsLength, sizeof(double));
+                ComputeBuffer weightedInputVals = new ComputeBuffer(outputsLength, sizeof(double));
+
+                //Set Data
+                inputsVals.SetData(GetInputArray(inputs));
+
+                dimensions.SetData(new uint[] { (uint)weights.Width, (uint)weights.Height, (uint)biases.Width, (uint)biases.Height, (uint)inputs[0].Width, (uint)inputs[0].Height });
+
+                //Set Buffers
+                computeShader.SetBuffer(0, "weights", weightsVals);
+                computeShader.SetBuffer(0, "inputs", inputsVals);
+                computeShader.SetBuffer(0, "bias", biasVals);
+
+                computeShader.SetBuffer(0, "dimensions", dimensions);
+
+                computeShader.SetBuffer(0, "weightedInputs", weightedInputVals);
+                computeShader.SetBuffer(0, "activation", activationVals);
+
+                //Calculate
+                computeShader.Dispatch(0, activation[0].Width, activation[0].Height, inputs.Length);
+
+                double[] activationsOutput = new double[inputs.Length * activation[0].Length];
+                double[] weightedInputOutput = new double[inputs.Length * weightedInputs[0].Length];
+
+                //Receive Result
+                activationVals.GetData(activationsOutput);
+                weightedInputVals.GetData(weightedInputOutput);
+
+                //Format Correctly
+                ConvertToMatrices(weightedInputs, weightedInputOutput, activation, activationsOutput);
+
+                //Clear Memory
+                inputsVals.Release();
+                activationVals.Release();
+                weightedInputVals.Release();
+
+                dimensions.Release();
+            }
+            else
+                Debug.Log("Error, Dimensions don't match");
+
+            return (weightedInputs, activation);
+        }
+
+        private double[] GetInputArray(DNAMatrix[] inputs)
+        {
+            double[] inputValues = new double[inputs.Length * inputs[0].Length];
+
+            /*
+            int count = 0;
+            foreach (DNAMatrix matrix in inputs)
+            {
+                foreach (double value in matrix.Values)
+                {
+                    inputValues[count] = value;
+                    count++;
+                }
+            }
+            */
+
+            int count = 0;
+            foreach (DNAMatrix matrix in inputs)
+            {
+                Array.Copy(matrix.Values, 0, inputValues, count, matrix.Values.Length);
+                count += matrix.Values.Length;
+            }
+
+            return inputValues;
+        }
+
+        private void ConvertToMatrices(DNAMatrix[] weightedInputs, double[] weightedInputsOutput, DNAMatrix[] activations, double[] activationsOutput)
+        {
+            for (int i = 0; i < weightedInputs.Length; i++)
+            {
+                Array.Copy(weightedInputsOutput, i * weightedInputs[i].Length, weightedInputs[i].Values, 0, weightedInputs[i].Length);
+                Array.Copy(activationsOutput, i * activations[i].Length, activations[i].Values, 0, activations[i].Length);
+
+                /*
+                for (int j = 0; j < weightedInputs[i].Length; j++)
+                {
+                    int index = i * weightedInputs[i].Length + j;
+
+                    weightedInputs[i][j] = weightedInputsOutput[index];
+                    activations[i][j] = activationsOutput[index];
+                }
+                */
+            }
         }
 
 

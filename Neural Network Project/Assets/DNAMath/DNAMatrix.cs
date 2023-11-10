@@ -27,6 +27,12 @@ namespace DNAMath
             public int Width;
         }
 
+        public struct GPUMatrixDimensions
+        {
+            public uint Height;
+            public uint Width;
+        }
+
         /// <summary>
         /// Shader Script that runs Matrix Multiplication on the GPU
         /// </summary>

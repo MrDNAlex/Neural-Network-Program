@@ -1,6 +1,12 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
+struct DNAMatrix
+{
+    uint width;
+    uint height;
+};
+
 struct MatrixDimensions
 {
     uint width;
@@ -24,7 +30,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     uint row = DispatchThreadID.y;
     uint col = DispatchThreadID.x;
-
+    
     // Check if the current thread is within valid dimensions
     if (row < newMatrixDims[0].height && col < newMatrixDims[0].width)
     {
@@ -33,7 +39,10 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
         // Perform matrix multiplication
         for (uint i = 0; i < matrixDimsA[0].width; ++i)
         {
-            sum += matrixA[row * matrixDimsA[0].width + i] * matrixB[i * matrixDimsB[0].width + col];
+            uint index1 = row * matrixDimsA[0].width + i;
+            uint index2 = i * matrixDimsB[0].width + col;
+            
+            sum += matrixA[index1] * matrixB[index2];
         }
 
         // Store the result in the output matrix
