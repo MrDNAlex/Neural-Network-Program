@@ -1,0 +1,83 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+struct MatrixDimensions
+{
+    uint width;
+    uint height;
+    
+    uint GetLength()
+    {
+        return width * height;
+    }
+};
+
+//Dimensions      Node Values = cost Gradient Bias
+RWStructuredBuffer<MatrixDimensions> dimensions; //node Value, inputs, costGradientWeights
+
+//Weighted Inputs
+RWStructuredBuffer<double> inputs; //Need to transpose this
+
+//Node Values
+RWStructuredBuffer<double> nodeValues;
+
+//Activation
+RWStructuredBuffer<double> costGradientWeight;
+
+
+/*
+//Expected Outputs
+RWStructuredBuffer<double> costGradientBias;
+*/
+
+
+uint GetNodeIndex(uint row, uint column)
+{
+    return row * dimensions[0].width + column;
+}
+
+uint GetInputsTransposeIndex(uint row, uint column)
+{
+    return column * dimensions[1].height + row;
+}
+
+uint GetWeightsIndex(uint row, uint column)
+{
+    return row * dimensions[2].width + column;
+}
+
+uint GetNodeMatrixOffset(uint matrixIndex)
+{
+    return matrixIndex * (dimensions[0].GetLength());
+}
+
+uint GetInputsMatrixOffset(uint matrixIndex)
+{
+    return matrixIndex * (dimensions[1].GetLength());
+}
+
+uint GetWeightsMatrixOffset(uint matrixIndex)
+{
+    return matrixIndex * (dimensions[2].GetLength());
+}
+
+///Performs the dot product necessary for the matrix multiplication
+double DotProduct(uint row, uint column, uint matrixIndex)
+{
+    double sum = 0;
+     // Perform matrix multiplication
+    for (uint i = 0; i < dimensions[0].width; ++i)
+        sum += nodeValues[GetNodeMatrixOffset(matrixIndex) + row * dimensions[0].width + i] * inputs[GetInputsMatrixOffset(matrixIndex) + i * dimensions[1].width + column]; //Might be other way
+    
+    return sum;
+}
+
+[numthreads(1, 1, 1)]
+void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint row = DispatchThreadID.y;
+    uint col = DispatchThreadID.x;
+    uint matrixIndex = DispatchThreadID.z;
+    
+    costGradientWeight[GetWeightsIndex(row, col)] += DotProduct(row, col, matrixIndex);
+    
+}

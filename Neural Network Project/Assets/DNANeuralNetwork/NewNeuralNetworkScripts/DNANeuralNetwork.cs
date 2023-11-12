@@ -137,9 +137,9 @@ namespace DNANeuralNet
 
             //Removing this will bring us back to good learning
             layers[outputLayerIndex].ParallelCalculateOutputLayerNodeValues(layerDatas[outputLayerIndex], expectedOutputs, cost);
-
+            layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
             //Update output layer gradients
-           
+
             System.DateTime parallelOperations = System.DateTime.Now;
 
             for (int j = 0; j < data.Length; j++)
@@ -150,7 +150,7 @@ namespace DNANeuralNet
                 //DNALayerLearnData outputLearnData = layerDatas[outputLayerIndex][j];
 
                // outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data[j].expectedOutputs, cost);
-                outputLayer.UpdateGradients(outputLearnData);
+               // outputLayer.UpdateGradients(outputLearnData);
 
                 //Update All Hidden layer gradients
                 for (int i = outputLayerIndex - 1; i >= 0; i--)
