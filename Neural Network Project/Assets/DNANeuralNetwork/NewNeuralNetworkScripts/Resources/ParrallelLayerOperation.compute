@@ -30,10 +30,10 @@ RWStructuredBuffer<double> weightedInputs;
 RWStructuredBuffer<double> activation;
 
 //Activation Function Type
-//RWStructuredBuffer<uint> activationFunction;
+RWStructuredBuffer<int> activationFunction;
 
 //Exponential Sum (For Softmax)
-double expSum = 0;
+float expSum = 0;
 
 //Sigmoid Activation Function
 double Sigmoid(double value)
@@ -71,34 +71,28 @@ double ApplyActivation(double value)
 {
     double activation = 0;
     
-    activation = Sigmoid(value);
-    /*
+   // activation = Sigmoid(value);
+    
     switch (activationFunction[0])
     {
-
-    
         case 1:
             activation = Sigmoid(value);
             break;
-        
-        case "sigmoid":
-            activation = Sigmoid(value);
-            break;
-        case "tanh":
+        case 2:
             activation = TanH(value);
             break;
-        case "relu":
+        case 3:
             activation = ReLu(value);
             break;
-        case "silu":
+        case 4:
             activation = SiLu(value);
             break;
-        case "softmax":
+        case 5:
             activation = Softmax(value);
             break;
 
     }
-*/
+
     return activation;
 
 }
@@ -134,7 +128,7 @@ double LayerOperation(uint row, uint column, uint matrixIndex)
     //Get Dot product
     weightedInputs[matrixIndex * dimensions[1].GetLength() + GetIndex(row, column)] = innerProduct;
     
-    expSum += exp(innerProduct);
+    expSum = exp(innerProduct);
     
     //Apply activation
     return ApplyActivation(innerProduct);
@@ -146,6 +140,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     uint row = DispatchThreadID.y;
     uint col = DispatchThreadID.x;
     uint matrixIndex = DispatchThreadID.z;
+    
+   
     
     activation[matrixIndex * dimensions[1].GetLength() + GetIndex(row, col)] = LayerOperation(row, col, matrixIndex);
 }

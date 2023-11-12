@@ -12,6 +12,8 @@ namespace DNANeuralNet
 		DNAMatrix CostDerivative(DNAMatrix predictedOutput, DNAMatrix expectedOutput);
 
 		DNACost.CostType CostFunctionType();
+
+		int GetCostIndex();
 	}
 }
 

@@ -67,9 +67,9 @@ namespace DNANeuralNet
 				return ActivationType.Sigmoid;
 			}
 
-			public string GetActivationFunctionName ()
+			public int GetActivationFunctionIndex ()
             {
-				return "sigmoid";
+				return 1;
             }
 		}
 
@@ -108,9 +108,9 @@ namespace DNANeuralNet
 				return ActivationType.TanH;
 			}
 
-			public string GetActivationFunctionName()
+			public int GetActivationFunctionIndex()
 			{
-				return "tanh";
+				return 2;
 			}
 		}
 
@@ -142,9 +142,9 @@ namespace DNANeuralNet
 				return ActivationType.ReLU;
 			}
 
-			public string GetActivationFunctionName()
+			public int GetActivationFunctionIndex()
 			{
-				return "relu";
+				return 3;
 			}
 		}
 
@@ -179,9 +179,9 @@ namespace DNANeuralNet
 				return ActivationType.SiLU;
 			}
 
-			public string GetActivationFunctionName()
+			public int GetActivationFunctionIndex()
 			{
-				return "silu";
+				return 4;
 			}
 		}
 
@@ -226,9 +226,9 @@ namespace DNANeuralNet
 				return ActivationType.Softmax;
 			}
 
-			public string GetActivationFunctionName()
+			public int GetActivationFunctionIndex()
 			{
-				return "softmax";
+				return 5;
 			}
 		}
 	}

@@ -51,6 +51,11 @@ namespace DNANeuralNet
 			{
 				return CostType.MeanSquareError;
 			}
+
+			public int GetCostIndex()
+			{
+				return 1;
+			}
 		}
 
 		public class CrossEntropy : IDNACost
@@ -91,6 +96,11 @@ namespace DNANeuralNet
 			{
 				return CostType.CrossEntropy;
 			}
+
+			public int GetCostIndex ()
+            {
+				return 2;
+            }
 		}
 	}
 }

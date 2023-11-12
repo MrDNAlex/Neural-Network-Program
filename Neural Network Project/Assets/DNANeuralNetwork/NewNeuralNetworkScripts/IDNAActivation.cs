@@ -13,7 +13,7 @@ namespace DNANeuralNet
 
         DNAActivation.ActivationType GetActivationType();
 
-        string GetActivationFunctionName();
+        int GetActivationFunctionIndex();
     }
 }
 
