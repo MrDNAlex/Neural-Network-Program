@@ -137,35 +137,42 @@ namespace DNANeuralNet
 
             //Removing this will bring us back to good learning
             layers[outputLayerIndex].ParallelCalculateOutputLayerNodeValues(layerDatas[outputLayerIndex], expectedOutputs, cost);
-            layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
+
             //Update output layer gradients
+            layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
 
             System.DateTime parallelOperations = System.DateTime.Now;
 
-            for (int j = 0; j < data.Length; j++)
+            // for (int j = 0; j < data.Length; j++)
+            //{
+            //Backpropogation
+            //DNALayer outputLayer = layers[outputLayerIndex];
+            //DNALayerLearnData outputLearnData = learnData[j].layerData[outputLayerIndex];
+            //DNALayerLearnData outputLearnData = layerDatas[outputLayerIndex][j];
+
+            // outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data[j].expectedOutputs, cost);
+            // outputLayer.UpdateGradients(outputLearnData);
+
+            //Update All Hidden layer gradients
+            for (int i = outputLayerIndex - 1; i >= 0; i--)
             {
-                //Backpropogation
-                DNALayer outputLayer = layers[outputLayerIndex];
-                DNALayerLearnData outputLearnData = learnData[j].layerData[outputLayerIndex];
-                //DNALayerLearnData outputLearnData = layerDatas[outputLayerIndex][j];
+                DNALayer hiddenLayer = layers[i];
 
-               // outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data[j].expectedOutputs, cost);
-               // outputLayer.UpdateGradients(outputLearnData);
-
-                //Update All Hidden layer gradients
-                for (int i = outputLayerIndex - 1; i >= 0; i--)
+                for (int j = 0; j < data.Length; j++)
                 {
                     DNALayerLearnData layerLearnData = learnData[j].layerData[i];
-                    DNALayer hiddenLayer = layers[i];
 
                     hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], learnData[j].layerData[i + 1].nodeValues);
-                    hiddenLayer.UpdateGradients(layerLearnData);
+                    //hiddenLayer.UpdateGradients(layerLearnData);
                 }
+
+                hiddenLayer.ParallelUpdateGradients(layerDatas[i]);
             }
+            //}
 
             System.DateTime leftover = System.DateTime.Now;
 
-            
+
             double totalTime = (leftover - startTime).TotalSeconds;
 
             double formatTime = 100.0 * (format - startTime).TotalSeconds / totalTime;
@@ -173,7 +180,7 @@ namespace DNANeuralNet
             double leftOverTime = 100.0 * (leftover - parallelOperations).TotalSeconds / totalTime;
 
             Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
-            
+
         }
 
         void UpdateGradients(DNADataPoint data, DNANetworkLearnData learnData)

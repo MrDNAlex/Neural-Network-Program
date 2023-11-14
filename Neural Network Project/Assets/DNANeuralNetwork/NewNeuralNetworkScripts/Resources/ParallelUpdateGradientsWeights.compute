@@ -37,7 +37,7 @@ uint GetNodeIndex(uint row, uint column)
 
 uint GetInputsTransposeIndex(uint row, uint column)
 {
-    return column * dimensions[1].height + row;
+    return row * dimensions[1].width + column;
 }
 
 uint GetWeightsIndex(uint row, uint column)
@@ -66,7 +66,7 @@ double DotProduct(uint row, uint column, uint matrixIndex)
     double sum = 0;
      // Perform matrix multiplication
     for (uint i = 0; i < dimensions[0].width; ++i)
-        sum += nodeValues[GetNodeMatrixOffset(matrixIndex) + row * dimensions[0].width + i] * inputs[GetInputsMatrixOffset(matrixIndex) + i * dimensions[1].width + column]; //Might be other way
+        sum += nodeValues[GetNodeMatrixOffset(matrixIndex) + row * dimensions[0].width + i] * inputs[GetInputsMatrixOffset(matrixIndex) + GetInputsTransposeIndex(row, i)]; //Might be other way  i * dimensions[1].width + column
     
     return sum;
 }
