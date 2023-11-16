@@ -96,6 +96,7 @@ namespace DNANeuralNet
                 UpdateGradients(trainingData[i], batchLearnData[i]);
             }
             */
+            
 
             ParallelUpdateGradients(trainingData, batchLearnData);
 
@@ -179,7 +180,7 @@ namespace DNANeuralNet
             double layerTime = 100.0 * (parallelOperations - format).TotalSeconds / totalTime;
             double leftOverTime = 100.0 * (leftover - parallelOperations).TotalSeconds / totalTime;
 
-            Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
+          //  Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
 
         }
 
@@ -222,7 +223,7 @@ namespace DNANeuralNet
             double layerTime = 100.0 * (layerOperation - startTime).TotalSeconds / totalTime;
             double leftOverTime = 100.0 * (leftover - layerOperation).TotalSeconds / totalTime;
 
-            Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
+           // Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
         }
 
 

@@ -2,10 +2,10 @@
 #pragma kernel CSMain
 struct MatrixDimensions
 {
-    uint width;
-    uint height;
+    int width;
+    int height;
     
-    uint GetLength()
+    int GetLength()
     {
         return width * height;
     }
@@ -23,50 +23,18 @@ RWStructuredBuffer<double> nodeValues;
 //Activation
 RWStructuredBuffer<double> costGradientWeight;
 
-
-/*
-//Expected Outputs
-RWStructuredBuffer<double> costGradientBias;
-*/
-
-
-uint GetNodeIndex(uint row, uint column)
+int GetNodeIndex(int row, int column)
 {
     return row * dimensions[0].width + column;
 }
 
-uint GetInputsTransposeIndex(uint row, uint column)
-{
-    return row * dimensions[1].width + column;
-}
-
-uint GetWeightsIndex(uint row, uint column)
-{
-    return row * dimensions[2].width + column;
-}
-
-uint GetNodeMatrixOffset(uint matrixIndex)
-{
-    return matrixIndex * (dimensions[0].GetLength());
-}
-
-uint GetInputsMatrixOffset(uint matrixIndex)
-{
-    return matrixIndex * (dimensions[1].GetLength());
-}
-
-uint GetWeightsMatrixOffset(uint matrixIndex)
-{
-    return matrixIndex * (dimensions[2].GetLength());
-}
-
 ///Performs the dot product necessary for the matrix multiplication
-double DotProduct(uint row, uint column, uint matrixIndex)
+double DotProduct(int row, int column, int matrixIndex)
 {
     double sum = 0;
      // Perform matrix multiplication
-    for (uint i = 0; i < dimensions[0].width; ++i)
-        sum += nodeValues[GetNodeMatrixOffset(matrixIndex) + row * dimensions[0].width + i] * inputs[GetInputsMatrixOffset(matrixIndex) + GetInputsTransposeIndex(row, i)]; //Might be other way  i * dimensions[1].width + column
+    for (int i = 0; i < dimensions[0].width; ++i)
+        sum += nodeValues[matrixIndex * (dimensions[0].GetLength()) + GetNodeIndex(row, i)] * inputs[matrixIndex * (dimensions[1].GetLength()) + i * dimensions[1].width + column]; //Correct So far i * dimensions[1].width + column
     
     return sum;
 }
@@ -74,10 +42,9 @@ double DotProduct(uint row, uint column, uint matrixIndex)
 [numthreads(1, 1, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    uint row = DispatchThreadID.y;
-    uint col = DispatchThreadID.x;
-    uint matrixIndex = DispatchThreadID.z;
+    int row = DispatchThreadID.y;
+    int col = DispatchThreadID.x;
+    int matrixIndex = DispatchThreadID.z;
     
-    costGradientWeight[GetWeightsIndex(row, col)] += DotProduct(row, col, matrixIndex);
-    
+    costGradientWeight[row * dimensions[2].width + col] += DotProduct(row, col, matrixIndex);
 }

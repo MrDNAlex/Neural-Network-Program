@@ -3,8 +3,8 @@
 
 struct MatrixDimensions
 {
-    uint width;
-    uint height;
+    int width;
+    int height;
 };
 
 RWStructuredBuffer<MatrixDimensions> dimensions; //[weights, bias, inputs]
@@ -100,14 +100,14 @@ double DotProduct(uint row, uint column)
 {
     double sum = 0;
      // Perform matrix multiplication
-    for (uint i = 0; i < dimensions[0].width; ++i)
+    for (int i = 0; i < dimensions[0].width; ++i)
         sum += weights[row * dimensions[0].width + i] * inputs[i * dimensions[2].width + column];
     
     return sum;
 }
 
 //Performs the entire layer operation
-double LayerOperation(uint row, uint column)
+double LayerOperation(int row, int column)
 {
     uint index = row * dimensions[1].width + column;
     double innerProduct = DotProduct(row, column);
@@ -126,8 +126,8 @@ double LayerOperation(uint row, uint column)
 [numthreads(1, 1, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    uint row = DispatchThreadID.y;
-    uint col = DispatchThreadID.x;
+    int row = DispatchThreadID.y;
+    int col = DispatchThreadID.x;
     
     activation[row * dimensions[1].width + col] = LayerOperation(row, col);
 }

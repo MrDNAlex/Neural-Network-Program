@@ -3,10 +3,10 @@
 
 struct MatrixDimensions
 {
-    uint width;
-    uint height;
+    int width;
+    int height;
     
-    uint GetLength()
+    int GetLength()
     {
         return width * height;
     }
@@ -71,8 +71,6 @@ double ApplyActivation(double value)
 {
     double activation = 0;
     
-   // activation = Sigmoid(value);
-    
     switch (activationFunction[0])
     {
         case 1:
@@ -97,36 +95,36 @@ double ApplyActivation(double value)
 
 }
 
-uint GetIndex(uint row, uint column)
+int GetIndex(int row, int column)
 {
     return row * dimensions[1].width + column;
 }
 
-uint GetMatrixOffset(uint matrixIndex)
+int GetMatrixOffset(int matrixIndex)
 {
     return matrixIndex * (dimensions[2].GetLength());
 }
 
 ///Performs the dot product necessary for the matrix multiplication
-double DotProduct(uint row, uint column, uint matrixIndex)
+double DotProduct(int row, int column, int matrixIndex)
 {
     double sum = 0;
      // Perform matrix multiplication
     for (uint i = 0; i < dimensions[0].width; ++i)
-        sum += weights[row * dimensions[0].width + i] * inputs[GetMatrixOffset(matrixIndex) + i * dimensions[2].width + column];
+        sum += weights[row * dimensions[0].width + i] * inputs[matrixIndex * (dimensions[2].GetLength()) + i * dimensions[2].width + column]; 
     
     return sum;
 }
 
 //Performs the entire layer operation
-double LayerOperation(uint row, uint column, uint matrixIndex)
+double LayerOperation(int row, int column, int matrixIndex)
 {
     double innerProduct = DotProduct(row, column, matrixIndex);
     
-    innerProduct += bias[GetIndex(row, column)];
+    innerProduct += bias[row * dimensions[1].width + column];
     
     //Get Dot product
-    weightedInputs[matrixIndex * dimensions[1].GetLength() + GetIndex(row, column)] = innerProduct;
+    weightedInputs[matrixIndex * dimensions[1].GetLength() + row * dimensions[1].width + column] = innerProduct;
     
     expSum = exp(innerProduct);
     
@@ -137,11 +135,9 @@ double LayerOperation(uint row, uint column, uint matrixIndex)
 [numthreads(1, 1, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    uint row = DispatchThreadID.y;
-    uint col = DispatchThreadID.x;
-    uint matrixIndex = DispatchThreadID.z;
+    int row = DispatchThreadID.y;
+    int col = DispatchThreadID.x;
+    int matrixIndex = DispatchThreadID.z;
     
-   
-    
-    activation[matrixIndex * dimensions[1].GetLength() + GetIndex(row, col)] = LayerOperation(row, col, matrixIndex);
+    activation[matrixIndex * dimensions[1].GetLength() + row * dimensions[1].width + col] = LayerOperation(row, col, matrixIndex);
 }

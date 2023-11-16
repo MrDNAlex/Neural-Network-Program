@@ -3,10 +3,10 @@
 
 struct MatrixDimensions
 {
-    uint width;
-    uint height;
+    int width;
+    int height;
     
-    uint GetLength()
+    int GetLength()
     {
         return width * height;
     }
@@ -33,12 +33,12 @@ RWStructuredBuffer<int> derivativeType; //Cost , Activation
 //Exponential Sum
 float expSum = 0;
 
-uint GetIndex(uint row, uint column)
+int GetIndex(int row, int column)
 {
     return row * dimensions[0].width + column;
 }
 
-uint GetMatrixOffset(uint matrixIndex)
+int GetMatrixOffset(int matrixIndex)
 {
     return matrixIndex * (dimensions[0].GetLength());
 }
@@ -148,11 +148,11 @@ double GetActivationDerivative(int index)
 [numthreads(1, 1, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    uint row = DispatchThreadID.y;
-    uint col = DispatchThreadID.x;
-    uint matrixIndex = DispatchThreadID.z;
+    int row = DispatchThreadID.y;
+    int col = DispatchThreadID.x;
+    int matrixIndex = DispatchThreadID.z;
     
-    int index = GetMatrixOffset(matrixIndex) + GetIndex(row, col);
+    int index = matrixIndex * (dimensions[0].GetLength()) + row * dimensions[0].width + col;
 
     nodeValues[index] = GetCostDerivative(index) * GetActivationDerivative(index);
 
