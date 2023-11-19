@@ -110,7 +110,7 @@ double DotProduct(int row, int column, int matrixIndex)
 {
     double sum = 0;
      // Perform matrix multiplication
-    for (uint i = 0; i < dimensions[0].width; ++i)
+    for (int i = 0; i < dimensions[0].width; ++i)
         sum += weights[row * dimensions[0].width + i] * inputs[matrixIndex * (dimensions[2].GetLength()) + i * dimensions[2].width + column]; 
     
     return sum;

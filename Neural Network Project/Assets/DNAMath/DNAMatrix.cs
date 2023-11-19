@@ -338,7 +338,7 @@ namespace DNAMath
         }
 
         /// <summary>
-        /// Transposes the matrix
+        /// Returns the Transpose of the matrix
         /// </summary>
         public DNAMatrix Transpose()
         {

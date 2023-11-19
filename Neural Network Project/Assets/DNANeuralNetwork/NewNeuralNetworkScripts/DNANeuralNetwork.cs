@@ -96,8 +96,8 @@ namespace DNANeuralNet
                 UpdateGradients(trainingData[i], batchLearnData[i]);
             }
             */
+            //Ok so so far We know for sure Parallel Weight Update Gradients is the error because CPU and GPU at 0->10 were near identical when only using parallel Bias
             
-
             ParallelUpdateGradients(trainingData, batchLearnData);
 
             // Update weights and biases based on the calculated gradients
@@ -144,15 +144,6 @@ namespace DNANeuralNet
 
             System.DateTime parallelOperations = System.DateTime.Now;
 
-            // for (int j = 0; j < data.Length; j++)
-            //{
-            //Backpropogation
-            //DNALayer outputLayer = layers[outputLayerIndex];
-            //DNALayerLearnData outputLearnData = learnData[j].layerData[outputLayerIndex];
-            //DNALayerLearnData outputLearnData = layerDatas[outputLayerIndex][j];
-
-            // outputLayer.CalculateOutputLayerNodeValues(outputLearnData, data[j].expectedOutputs, cost);
-            // outputLayer.UpdateGradients(outputLearnData);
 
             //Update All Hidden layer gradients
             for (int i = outputLayerIndex - 1; i >= 0; i--)
@@ -161,15 +152,14 @@ namespace DNANeuralNet
 
                 for (int j = 0; j < data.Length; j++)
                 {
-                    DNALayerLearnData layerLearnData = learnData[j].layerData[i];
+                    DNALayerLearnData layerLearnData =layerDatas[i][j];
 
-                    hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], learnData[j].layerData[i + 1].nodeValues);
+                    hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], layerDatas[i+1][j].nodeValues);
                     //hiddenLayer.UpdateGradients(layerLearnData);
                 }
 
                 hiddenLayer.ParallelUpdateGradients(layerDatas[i]);
             }
-            //}
 
             System.DateTime leftover = System.DateTime.Now;
 

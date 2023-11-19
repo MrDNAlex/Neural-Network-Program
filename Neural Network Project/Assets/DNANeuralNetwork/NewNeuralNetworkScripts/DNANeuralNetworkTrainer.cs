@@ -724,7 +724,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     bestNetwork = network;
                     createLine("New Best Network Made");
 
-                    Debug.Log("New Best Network Made");
+                   // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
                 }
@@ -734,7 +734,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     lastAccuracy = accuracy;
 
                     createLine("New Best Network Made");
-                    Debug.Log("New Best Network Made");
+                   // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
 
@@ -757,13 +757,13 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
         string jsonData = JsonUtility.ToJson(neuro, true);
 
-        Debug.Log(jsonData);
+        //Debug.Log(jsonData);
 
         File.WriteAllText(dir, jsonData);
 
         createLine("Saved");
 
-        Debug.Log("Saved");
+        //Debug.Log("Saved");
     }
 
 }

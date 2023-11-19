@@ -154,12 +154,12 @@ namespace DNANeuralNet
 
         public void UpdateGradients(DNALayerLearnData layerLearnData)
         {
+            //Lock for Parallel Processing
             lock (_costGradientWeight)
             {
                 _costGradientWeight += layerLearnData.nodeValues * layerLearnData.inputs.Transpose();
             }
 
-            // Update cost gradient with respect to biases (lock for multithreading)
             lock (_costGradientBias)
             {
                 _costGradientBias += layerLearnData.nodeValues;
@@ -168,9 +168,17 @@ namespace DNANeuralNet
 
         public void ParallelUpdateGradients(DNALayerLearnData[] layerLearnData)
         {
-            ParallelUpdateGradientsWeights(layerLearnData);
+            // ParallelUpdateGradientsWeights(layerLearnData);
 
             ParallelUpdateGradientsBias(layerLearnData);
+
+            foreach (DNALayerLearnData learnData in layerLearnData)
+            {
+                _costGradientWeight += learnData.nodeValues * learnData.inputs.Transpose();
+
+                //_costGradientBias += learnData.nodeValues;
+            }
+
         }
 
         public void SetActivationFunction(IDNAActivation activation)
@@ -225,6 +233,7 @@ namespace DNANeuralNet
             parallelOutputLayer = Resources.Load<ComputeShader>("ParallelOutputLayer");
             parallelUpdateGradientsWeights = Resources.Load<ComputeShader>("ParallelUpdateGradientsWeights");
             parallelUpdateGradientsBias = Resources.Load<ComputeShader>("ParallelUpdateGradientsBias");
+            UpdateGradientsWeights = Resources.Load<ComputeShader>("UpdateGradientsWeights");
 
             if (layerOutputGPU != null)
             {
@@ -716,7 +725,7 @@ namespace DNANeuralNet
             int count = 0;
             foreach (DNALayerLearnData layer in layerLearnData)
             {
-                Array.Copy(layer.inputs.Values, 0, inputs, count, layer.inputs.Length);
+                Array.Copy(layer.inputs.Transpose().Values, 0, inputs, count, layer.inputs.Length);
                 count += layer.inputs.Values.Length;
             }
 

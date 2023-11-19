@@ -5,6 +5,11 @@ struct MatrixDimensions
 {
     int width;
     int height;
+    
+    int GetLength()
+    {
+        return width * height;
+    }
 };
 
 RWStructuredBuffer<MatrixDimensions> dimensions; //[weights, bias, inputs]
