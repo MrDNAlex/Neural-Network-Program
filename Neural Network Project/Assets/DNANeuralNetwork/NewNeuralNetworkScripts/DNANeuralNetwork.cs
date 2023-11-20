@@ -96,6 +96,7 @@ namespace DNANeuralNet
                 UpdateGradients(trainingData[i], batchLearnData[i]);
             }
             */
+            
             //Ok so so far We know for sure Parallel Weight Update Gradients is the error because CPU and GPU at 0->10 were near identical when only using parallel Bias
             
             ParallelUpdateGradients(trainingData, batchLearnData);
