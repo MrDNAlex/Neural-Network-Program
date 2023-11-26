@@ -39,7 +39,7 @@ double DotProduct(int row, int column, int matrixIndex)
     double sum = 0;
      // Perform matrix multiplication
     for (int i = 0; i < dimensions[0].width; ++i)
-        sum += nodeValues[matrixIndex * (dimensions[0].GetLength()) + NodeIndex(row, i)] * inputs[matrixIndex * (dimensions[1].GetLength()) + InputsIndex(i, column)]; //Correct So far i * dimensions[1].width + column
+        sum += nodeValues[matrixIndex * (dimensions[0].GetLength()) + NodeIndex(row, i)] * inputs[matrixIndex * (dimensions[1].GetLength()) + column * dimensions[1].height + i ]; //Correct So far i * dimensions[1].width + column    or InputsIndex(i, column)
     
     return sum;
 }
