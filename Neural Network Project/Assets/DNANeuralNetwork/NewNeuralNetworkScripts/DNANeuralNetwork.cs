@@ -141,7 +141,13 @@ namespace DNANeuralNet
             layers[outputLayerIndex].ParallelCalculateOutputLayerNodeValues(layerDatas[outputLayerIndex], expectedOutputs, cost);
 
             //Update output layer gradients
-            layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
+            
+            //Idk why I need this but it works only if I have this for some reason
+            foreach (DNALayerLearnData layerData in layerDatas[outputLayerIndex])
+            {
+                layers[outputLayerIndex].UpdateGradients(layerData);
+            }
+           // layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
 
             System.DateTime parallelOperations = System.DateTime.Now;
 

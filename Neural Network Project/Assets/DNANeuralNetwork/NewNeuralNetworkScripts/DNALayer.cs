@@ -168,21 +168,9 @@ namespace DNANeuralNet
 
         public void ParallelUpdateGradients(DNALayerLearnData[] layerLearnData)
         {
-            // ParallelUpdateGradientsWeights(layerLearnData);
-            _costGradientBias += ParallelUpdateGradientsBias(layerLearnData);
+            _costGradientBias = ParallelUpdateGradientsBias(layerLearnData);
 
-            _costGradientWeight += ParallelUpdateGradientsWeights(layerLearnData);
-
-            /*
-            foreach (DNALayerLearnData learnData in layerLearnData)
-            {
-                //_costGradientWeight += learnData.nodeValues * learnData.inputs.Transpose();
-                _costGradientWeight += UpdateGradientsWeight(learnData);
-
-                //_costGradientBias += learnData.nodeValues;
-            }
-            */
-
+            _costGradientWeight = ParallelUpdateGradientsWeights(layerLearnData);
         }
 
         public void SetActivationFunction(IDNAActivation activation)

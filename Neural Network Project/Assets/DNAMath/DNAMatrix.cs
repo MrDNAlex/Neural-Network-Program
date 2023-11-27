@@ -756,7 +756,7 @@ namespace DNAMath
         /// <summary>
         /// Displays the Matrix in the correct fashion, for debugging purposes
         /// </summary>
-        public void DisplayMat()
+        public string DisplayMat()
         {
             //Display the matrix
             string line = "\n";
@@ -767,13 +767,15 @@ namespace DNAMath
 
                     //Debug.Log("Width: " + width + " Height: " + height + " = " + newMat[getIndex(width, height, dim.x)]);
 
-                    line += this[height, width] + "    ";
+                    line += $"{this[height, width]}   ";
                 }
                 line += "\n";
 
             }
 
             Debug.Log(line);
+
+            return line;
         }
     }
 }

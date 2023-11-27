@@ -33,13 +33,18 @@ int InputsIndex(int row, int col)
     return row * dimensions[1].width + col;
 }
 
+int CostGradientIndex(int row, int col)
+{
+    return row * dimensions[2].width + col;
+}
+
 ///Performs the dot product necessary for the matrix multiplication
 double DotProduct(int row, int column, int matrixIndex)
 {
     double sum = 0;
      // Perform matrix multiplication
     for (int i = 0; i < dimensions[0].width; ++i)
-        sum += nodeValues[matrixIndex * (dimensions[0].GetLength()) + NodeIndex(row, i)] * inputs[matrixIndex * (dimensions[1].GetLength()) + column * dimensions[1].height + i ]; //Correct So far i * dimensions[1].width + column    or InputsIndex(i, column)
+        sum += nodeValues[matrixIndex * (dimensions[0].GetLength()) + NodeIndex(row, i)] * inputs[matrixIndex * (dimensions[1].GetLength()) + InputsIndex(i, column)]; //Correct So far i * dimensions[1].width + column    or InputsIndex(i, column)
     
     return sum;
 }
@@ -51,5 +56,5 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     int col = DispatchThreadID.x;
     int matrixIndex = DispatchThreadID.z;
     
-    costGradientWeight[InputsIndex(row, col)] += DotProduct(row, col, matrixIndex); //row * dimensions[2].width + col
+    costGradientWeight[CostGradientIndex(row, col)] += DotProduct(row, col, matrixIndex); //row * dimensions[2].width + col
 }
