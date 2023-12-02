@@ -12,7 +12,7 @@ namespace DNANeuralNet
         public DNALayer[] layers;
         public int[] layerSizes;
 
-        public ICost cost;
+        public IDNACost cost;
         System.Random rng;
         DNANetworkLearnData[] batchLearnData;
 
@@ -28,10 +28,10 @@ namespace DNANeuralNet
                 layers[i] = new DNALayer(layerSizes[i], layerSizes[i + 1]);
             }
 
-            cost = new Cost.MeanSquaredError();
+            cost = new DNACost.MeanSquaredError();
         }
 
-        public DNANeuralNetwork(int[] layerSizes, IActivation activation, IActivation outputLayerActivation, ICost cost)
+        public DNANeuralNetwork(int[] layerSizes, IDNAActivation activation, IDNAActivation outputLayerActivation, IDNACost cost)
         {
             this.layerSizes = layerSizes;
             rng = new System.Random();
@@ -43,7 +43,7 @@ namespace DNANeuralNet
                 layers[i] = new DNALayer(layerSizes[i], layerSizes[i + 1]);
             }
 
-            cost = new Cost.MeanSquaredError();
+            cost = new DNACost.MeanSquaredError();
 
             SetActivationFunction(activation, outputLayerActivation);
             SetCostFunction(cost);
@@ -72,8 +72,7 @@ namespace DNANeuralNet
             foreach (DNADataPoint d in data)
             {
                 (int predictedClass, DNAMatrix outputs) = Classify(d.inputs);
-                costVal += cost.CostFunction(outputs.Values, d.expectedOutputs.Values);
-
+                costVal += cost.CostFunction(outputs, d.expectedOutputs);
             }
             costVal = costVal / data.Length;
 
@@ -91,10 +90,16 @@ namespace DNANeuralNet
                 }
             }
 
+            /*
             for (int i = 0; i < trainingData.Length; i++)
             {
                 UpdateGradients(trainingData[i], batchLearnData[i]);
             }
+            */
+            
+            //Ok so so far We know for sure Parallel Weight Update Gradients is the error because CPU and GPU at 0->10 were near identical when only using parallel Bias
+            
+            ParallelUpdateGradients(trainingData, batchLearnData);
 
             // Update weights and biases based on the calculated gradients
             for (int i = 0; i < layers.Length; i++)
@@ -103,14 +108,91 @@ namespace DNANeuralNet
             }
         }
 
+        void ParallelUpdateGradients(DNADataPoint[] data, DNANetworkLearnData[] learnData)
+        {
+            System.DateTime startTime = System.DateTime.Now;
+
+            DNAMatrix[] inputsToNextLayer = new DNAMatrix[data.Length];
+            DNAMatrix[] expectedOutputs = new DNAMatrix[data.Length];
+            DNALayerLearnData[][] layerDatas = new DNALayerLearnData[learnData[0].layerData.Length][];
+
+            for (int j = 0; j < learnData[0].layerData.Length; j++)
+            {
+                layerDatas[j] = new DNALayerLearnData[learnData.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    inputsToNextLayer[i] = data[i].inputs;
+                    layerDatas[j][i] = learnData[i].layerData[j];
+                    expectedOutputs[i] = data[i].expectedOutputs;
+                }
+            }
+
+            System.DateTime format = System.DateTime.Now;
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                inputsToNextLayer = layers[i].ParallelCalculateOutputs(inputsToNextLayer, layerDatas[i]);
+            }
+
+            int outputLayerIndex = layers.Length - 1;
+
+            //Removing this will bring us back to good learning
+            layers[outputLayerIndex].ParallelCalculateOutputLayerNodeValues(layerDatas[outputLayerIndex], expectedOutputs, cost);
+
+            //Update output layer gradients
+            
+            //Idk why I need this but it works only if I have this for some reason
+            foreach (DNALayerLearnData layerData in layerDatas[outputLayerIndex])
+            {
+                layers[outputLayerIndex].UpdateGradients(layerData);
+            }
+           // layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
+
+            System.DateTime parallelOperations = System.DateTime.Now;
+
+
+            //Update All Hidden layer gradients
+            for (int i = outputLayerIndex - 1; i >= 0; i--)
+            {
+                DNALayer hiddenLayer = layers[i];
+
+                for (int j = 0; j < data.Length; j++)
+                {
+                    DNALayerLearnData layerLearnData =layerDatas[i][j];
+
+                    hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], layerDatas[i+1][j].nodeValues);
+                    //hiddenLayer.UpdateGradients(layerLearnData);
+                }
+
+                hiddenLayer.ParallelUpdateGradients(layerDatas[i]);
+            }
+
+            System.DateTime leftover = System.DateTime.Now;
+
+
+            double totalTime = (leftover - startTime).TotalSeconds;
+
+            double formatTime = 100.0 * (format - startTime).TotalSeconds / totalTime;
+            double layerTime = 100.0 * (parallelOperations - format).TotalSeconds / totalTime;
+            double leftOverTime = 100.0 * (leftover - parallelOperations).TotalSeconds / totalTime;
+
+          //  Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
+
+        }
+
         void UpdateGradients(DNADataPoint data, DNANetworkLearnData learnData)
         {
+            System.DateTime startTime = System.DateTime.Now;
+
             DNAMatrix inputsToNextLayer = data.inputs;
 
             for (int i = 0; i < layers.Length; i++)
             {
                 inputsToNextLayer = layers[i].CalculateOutputs(inputsToNextLayer, learnData.layerData[i]);
             }
+
+            System.DateTime layerOperation = System.DateTime.Now;
 
             //Backpropogation
             int outputLayerIndex = layers.Length - 1;
@@ -130,20 +212,29 @@ namespace DNANeuralNet
                 hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], learnData.layerData[i + 1].nodeValues);
                 hiddenLayer.UpdateGradients(layerLearnData);
             }
+
+            System.DateTime leftover = System.DateTime.Now;
+
+            double totalTime = (leftover - startTime).TotalSeconds;
+
+            double layerTime = 100.0 * (layerOperation - startTime).TotalSeconds / totalTime;
+            double leftOverTime = 100.0 * (leftover - layerOperation).TotalSeconds / totalTime;
+
+           // Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
         }
 
 
-        public void SetCostFunction(ICost costFunction)
+        public void SetCostFunction(IDNACost costFunction)
         {
             this.cost = costFunction;
         }
 
-        public void SetActivationFunction(IActivation activation)
+        public void SetActivationFunction(IDNAActivation activation)
         {
             SetActivationFunction(activation, activation);
         }
 
-        public void SetActivationFunction(IActivation activation, IActivation outputLayerActivation)
+        public void SetActivationFunction(IDNAActivation activation, IDNAActivation outputLayerActivation)
         {
             for (int i = 0; i < layers.Length - 1; i++)
             {

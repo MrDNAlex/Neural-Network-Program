@@ -51,7 +51,7 @@ public class MatrixTesting : MonoBehaviour
 
 
 
-        // DNAMatrix matrixA = new DNAMatrix(matrixADim.x, matrixADim.y);
+       //  DNAMatrix matrixA = new DNAMatrix(matrixADim.x, matrixADim.y);
         DNAMatrix matrixA = DNAMatrix.Increment(matrixADim.x, matrixADim.y);
 
         DNAMatrix matrixB = DNAMatrix.Increment(matrixBDim.x, matrixBDim.y);
@@ -59,19 +59,11 @@ public class MatrixTesting : MonoBehaviour
         startTime = System.DateTime.Now;
 
         //DNAMatrix result = matrixA * matrixB;
-        DNAMatrix result = DNAMatrix.multMatrixGPU(matrixA, matrixB);
 
         endTime = System.DateTime.Now;
         Debug.Log($"Matrix Multiplication: ({matrixA.Height}x{matrixA.Width}) * ({matrixB.Height}x{matrixB.Width})");
         Debug.Log("Total Time elapsed GPU (MilliSeconds): " + (endTime - startTime).TotalMilliseconds);
         
-
-       // result.DisplayMat();
-
-      
-
-       // result2.DisplayMat();
-
 
     }
 

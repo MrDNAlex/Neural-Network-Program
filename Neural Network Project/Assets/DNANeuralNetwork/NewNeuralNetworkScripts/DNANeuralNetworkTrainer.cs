@@ -39,7 +39,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     [SerializeField] string errorImagePath;
 
     [Header("Network Settings")]
-    [SerializeField] NeuralNetworkSettings networkSettings;
+    [SerializeField] DNANeuralNetworkSettings networkSettings;
 
     [Header("Image To Data")]
     List<DNADataPoint> allData = new List<DNADataPoint>(); //Will need to be cleared (I think)
@@ -106,46 +106,50 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             for (int j = 0; j < newImages[i].Count; j++)
             {
                 System.Random rng = new System.Random(Random.Range(0, 1000));
-                Texture2D img = newImages[i][j];
+                
 
-                //Debug.Log(RandomInNormalDistribution(rng));
+                int subImages = (int)Random.Range(minCopies, maxCopies);
 
-                if (j >= testingIndex)
+                for (int g = 0; g < subImages; g ++)
                 {
-                    evalData.Add(imageToData(img, i, outputNum));
-                }
-                else
-                {
-                    //Check if we process the images
-                    if (processImages)
+                    Texture2D img = newImages[i][j];
+
+                    if (j >= testingIndex)
                     {
-                        //Maybe remove the thresholds
-                        //Process images individually
-
-                        double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
-
-                        img = ApplyScale(img, (float)scale);
-
-                        float angle = (float)RandomInNormalDistribution(rng) * 10;
-
-                        //Apply Rotation
-                        img = ApplyRotation(img, angle);
-
-                        //Generate offsetNumbers
-                        //Used to be 5
-                        int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10));
-                        int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
-
-                        //Apply Offset (max 1/3 width and height)
-                        img = ApplyOffset(img, offsetX, offsetY);
-
-                        //Apply Noise
-                        img = ApplyNoise(img);
+                        evalData.Add(imageToData(img, i, outputNum));
                     }
+                    else
+                    {
+                        //Check if we process the images
+                        if (processImages)
+                        {
+                            //Maybe remove the thresholds
+                            //Process images individually
 
-                    //Convert to Data point
-                    data.Add(imageToData(img, i, outputNum));
+                            double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
 
+                            img = ApplyScale(img, (float)scale);
+
+                            float angle = (float)RandomInNormalDistribution(rng) * 10;
+
+                            //Apply Rotation
+                            img = ApplyRotation(img, angle);
+
+                            //Generate offsetNumbers
+                            //Used to be 5
+                            int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10));
+                            int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
+
+                            //Apply Offset (max 1/3 width and height)
+                            img = ApplyOffset(img, offsetX, offsetY);
+
+                            //Apply Noise
+                            img = ApplyNoise(img);
+                        }
+
+                        //Convert to Data point
+                        data.Add(imageToData(img, i, outputNum));
+                    }
                 }
 
                 Percent.text = (float)j / newImages[i].Count * 100 + " % ";
@@ -159,6 +163,8 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         }
 
         evaluateData = evalData.ToArray();
+
+        Debug.Log("Total Count :" + (data.Count + evalData.Count));
 
         StartCoroutine(trainNetwork());
 
@@ -178,10 +184,10 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         //Create a new Neural Network
         //NeuralNetwork neuro = new NeuralNetwork(networkSettings.neuralNetSize, hiddenActivation, outputActivation, costType);
 
-        DNANeuralNetwork neuro = new DNANeuralNetwork(networkSettings.networkSize, Activation.GetActivationFromType(networkSettings.activationType), Activation.GetActivationFromType(networkSettings.outputActivationType), Cost.GetCostFromType(networkSettings.costType));
+        DNANeuralNetwork neuro = new DNANeuralNetwork(networkSettings.networkSize, DNAActivation.GetActivationFromType(networkSettings.activationType), DNAActivation.GetActivationFromType(networkSettings.outputActivationType), DNACost.GetCostFromType(networkSettings.costType));
 
         //Set Cost function
-        neuro.SetCostFunction(Cost.GetCostFromType(Cost.CostType.MeanSquareError));
+        neuro.SetCostFunction(DNACost.GetCostFromType(networkSettings.costType));
 
         currentLearningRate = networkSettings.initialLearningRate;
 
@@ -245,16 +251,21 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
             // StartCoroutine(displayCost(true, false, neuro, evaluateData));
 
+            System.DateTime startTime = System.DateTime.UtcNow;
+            
             //Teaching
             for (int i = 0; i < batches.Length; i++)
             {
-                //(1.0 / (1.0 + networkSettings.learnRateDecay * epoch)) *
+               
                 neuro.Learn(batches[i].data,  currentLearningRate, networkSettings.regularization, networkSettings.momentum);
 
                 Percent.text = "Teaching: " + (float)i / numOfBatches * 100 + " % ";
                 PercentSlider.value = (float)i / numOfBatches;
                 yield return null;
             }
+            System.DateTime endTime = System.DateTime.UtcNow;
+
+            Debug.Log("Training Time (sec): " + (endTime - startTime).TotalSeconds);
 
             //  StartCoroutine(displayCost(false, true, neuro, evaluateData));
 
@@ -713,7 +724,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     bestNetwork = network;
                     createLine("New Best Network Made");
 
-                    Debug.Log("New Best Network Made");
+                   // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
                 }
@@ -723,7 +734,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     lastAccuracy = accuracy;
 
                     createLine("New Best Network Made");
-                    Debug.Log("New Best Network Made");
+                   // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
 
@@ -746,13 +757,13 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
         string jsonData = JsonUtility.ToJson(neuro, true);
 
-        Debug.Log(jsonData);
+        //Debug.Log(jsonData);
 
         File.WriteAllText(dir, jsonData);
 
         createLine("Saved");
 
-        Debug.Log("Saved");
+        //Debug.Log("Saved");
     }
 
 }
