@@ -126,18 +126,18 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                             //Maybe remove the thresholds
                             //Process images individually
 
-                            double scale = 1 + RandomInNormalDistribution(rng) * 0.1;
+                            double scale = 1 + RandomInNormalDistribution(rng) * 0.175;//0.1
 
                             img = ApplyScale(img, (float)scale);
 
-                            float angle = (float)RandomInNormalDistribution(rng) * 10;
+                            float angle = (float)RandomInNormalDistribution(rng) * 15;//10
 
                             //Apply Rotation
                             img = ApplyRotation(img, angle);
 
                             //Generate offsetNumbers
                             //Used to be 5
-                            int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10));
+                            int offsetX = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.width / 10)); //10
                             int offsetY = Mathf.FloorToInt((float)RandomInNormalDistribution(rng) * (img.height / 10));
 
                             //Apply Offset (max 1/3 width and height)
@@ -471,7 +471,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         //Number determines the seed to use
         System.Random rng = new System.Random(Random.Range(0, 100000));
 
-        double noiseProbability = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble()) * 0.05f;
+        double noiseProbability = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble()) * 0.05;//0.05
         double noiseStrength = (float)System.Math.Min(rng.NextDouble(), rng.NextDouble());
 
         Texture2D newImage = image;

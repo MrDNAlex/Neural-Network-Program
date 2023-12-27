@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEditor;
 using System;
+using System.IO;
 
 namespace DNAMath
 {
@@ -93,6 +94,11 @@ namespace DNAMath
         /// Describes the number of columns the matrix has
         /// </summary>
         public int Width { get { return _width; } set { _width = value; } }
+
+        /// <summary>
+        /// Gets the Dimensions of the Matrix in String Form (HeightxWidth)
+        /// </summary>
+        public string Dimensions { get { return $"({Height} x {Width})"; } }
 
         /// <summary>
         /// Describes the number of values in the Matrix
@@ -776,6 +782,34 @@ namespace DNAMath
             Debug.Log(line);
 
             return line;
+        }
+
+        /// <summary>
+        /// Returns the Output Matrix Dimension of a Matrix Multiplication
+        /// </summary>
+        /// <param name="matrixA"></param>
+        /// <param name="matrixB"></param>
+        /// <returns></returns>
+        public static string GetMultOutputDimensions (DNAMatrix matrixA, DNAMatrix matrixB)
+        {
+            return $"({matrixA.Height} x {matrixB.Width})";
+        }
+
+        /// <summary>
+        /// Saves the Difference Matrix to the device for debugging purposes
+        /// </summary>
+        /// <param name="matrixA"></param>
+        /// <param name="matrixB"></param>
+        /// <param name="name"></param>
+        public static void SaveDifference(DNAMatrix matrixA, DNAMatrix matrixB, string name)
+        {
+            var dir = "Assets/Resources/matrix" + "/" + $"{name}" + ".json";
+
+            DNAMatrix difference = matrixA - matrixB;
+
+            string jsonData = JsonUtility.ToJson(difference, true);
+
+            File.WriteAllText(dir, jsonData);
         }
     }
 }

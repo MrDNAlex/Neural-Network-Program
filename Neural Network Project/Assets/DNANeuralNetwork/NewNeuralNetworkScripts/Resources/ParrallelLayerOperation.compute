@@ -126,7 +126,7 @@ double LayerOperation(int row, int column, int matrixIndex)
     //Get Dot product
     weightedInputs[matrixIndex * dimensions[1].GetLength() + row * dimensions[1].width + column] = innerProduct;
     
-    expSum = exp(innerProduct);
+    expSum += exp(innerProduct);
     
     //Apply activation
     return ApplyActivation(innerProduct);

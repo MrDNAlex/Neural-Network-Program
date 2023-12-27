@@ -1504,7 +1504,7 @@ MonoBehaviour:
     networkSize: 100300002c01000004000000
     activationType: 0
     outputActivationType: 0
-    costType: 1
+    costType: 0
     initialLearningRate: 0.05
     learnRateDecay: 0.075
     dataPerBatch: 32
