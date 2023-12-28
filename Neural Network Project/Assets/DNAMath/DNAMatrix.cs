@@ -808,6 +808,8 @@ namespace DNAMath
             DNAMatrix difference = matrixA - matrixB;
 
             string jsonData = JsonUtility.ToJson(difference, true);
+            jsonData += JsonUtility.ToJson(matrixA, true);
+            jsonData += JsonUtility.ToJson(matrixB, true);
 
             File.WriteAllText(dir, jsonData);
         }

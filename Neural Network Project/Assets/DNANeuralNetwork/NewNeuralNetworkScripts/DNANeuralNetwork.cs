@@ -143,12 +143,15 @@ namespace DNANeuralNet
             //Update output layer gradients
             
             //Idk why I need this but it works only if I have this for some reason
+            
             /*
             foreach (DNALayerLearnData layerData in layerDatas[outputLayerIndex])
             {
                 layers[outputLayerIndex].UpdateGradients(layerData);
             }
             */
+            
+            
             layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
 
             System.DateTime parallelOperations = System.DateTime.Now;
@@ -158,16 +161,6 @@ namespace DNANeuralNet
             for (int i = outputLayerIndex - 1; i >= 0; i--)
             {
                 DNALayer hiddenLayer = layers[i];
-                
-                /*
-                for (int j = 0; j < data.Length; j++)
-                {
-                    DNALayerLearnData layerLearnData = layerDatas[i][j];
-
-                   // hiddenLayer.CalculateHiddenLayerNodeValues(layerLearnData, layers[i + 1], layerDatas[i+1][j].nodeValues);
-                    //hiddenLayer.UpdateGradients(layerLearnData);
-                }
-                */
                 
                 hiddenLayer.ParallelCalculateHiddenLayerNodeValues(layerDatas[i], layers[i + 1], GetNodeValues(layerDatas[i + 1]));
                 hiddenLayer.ParallelUpdateGradients(layerDatas[i]);
