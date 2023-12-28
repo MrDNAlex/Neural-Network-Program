@@ -12,6 +12,8 @@ struct MatrixDimensions
     }
 };
 
+static const int GROUP_SIZE = 32;
+
 //Dimensions      Node Values = cost Gradient Bias
 RWStructuredBuffer<MatrixDimensions> dimensions; //node Value
 
@@ -42,9 +44,20 @@ double GetValue(int row, int col, int matrixIndex)
     return nodeValues[GetNodeMatrixOffset(matrixIndex) + GetNodeIndex(row, col)];
 }
 
-groupshared double sharedArray[32];
+groupshared double sharedArray[GROUP_SIZE];
 
-[numthreads(1, 1, 32)]
+double GetSum()
+{
+    double sum = 0;
+    for (int i = 0; i < GROUP_SIZE; ++i)
+    {
+        sum += sharedArray[i];
+    }
+    
+    return sum;
+}
+
+[numthreads(1, 1, GROUP_SIZE)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     int row = DispatchThreadID.y;
@@ -63,14 +76,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     // One thread in the group sums the values and writes to global memory
     if (matrixIndex == 0)
     {
-        double sum = 0;
-        for (int i = 0; i < 32; ++i)
-        {
-            sum += sharedArray[i];
-        }
-
         // Perform the final operation
-        costGradientBias[GetNodeIndex(row, col)] += sum;
+        costGradientBias[GetNodeIndex(row, col)] += GetSum();
     }
-
 }

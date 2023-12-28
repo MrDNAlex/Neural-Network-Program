@@ -189,17 +189,18 @@ namespace DNANeuralNet
             DNAMatrix parallel = ParallelUpdateGradientsBias(layerLearnData);
 
             if (count < 300)
-                DNAMatrix.SaveDifference(matrix, parallel, $"Parallel Bias {count} ({NumNodesIn} x {NumNodesOut})");
+               DNAMatrix.SaveDifference(matrix, parallel, $"Parallel Bias {count} ({NumNodesIn} x {NumNodesOut})");
             */
             //Bias is now good
             _costGradientBias += ParallelUpdateGradientsBias(layerLearnData);
 
             _costGradientWeight += ParallelUpdateGradientsWeights(layerLearnData);
 
+
             //Apply ParallelGradientBias Method Tomorrow
 
 
-            DNAMatrix matrix= new DNAMatrix(_costGradientWeight.Height, _costGradientWeight.Width);
+            DNAMatrix matrix = new DNAMatrix(_costGradientWeight.Height, _costGradientWeight.Width);
             foreach (DNALayerLearnData layerData in layerLearnData)
             {
                 matrix += layerData.nodeValues * layerData.inputs.Transpose();
@@ -210,7 +211,7 @@ namespace DNANeuralNet
             if (count < 300)
                 DNAMatrix.SaveDifference(matrix, parallel, $"Parallel Weights {count} ({NumNodesIn} x {NumNodesOut})");
             count++;
-
+            
         }
 
         public void SetActivationFunction(IDNAActivation activation)
@@ -663,7 +664,7 @@ namespace DNANeuralNet
             computeShader.SetBuffer(0, "costGradientWeight", weightsValues);
 
             //Calculate
-            computeShader.Dispatch(0, _costGradientWeight.Width, _costGradientWeight.Height, layerLearnData.Length);
+            computeShader.Dispatch(0, _costGradientWeight.Width, _costGradientWeight.Height, 1); //layerLearnData.Length
 
             //double[] costGradientWeight = new double[costGradientWeightLength];
             DNAMatrix costGradientWeight = new DNAMatrix(_costGradientWeight.Height, _costGradientWeight.Width);

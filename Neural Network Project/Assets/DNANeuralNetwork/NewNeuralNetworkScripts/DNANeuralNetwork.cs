@@ -141,21 +141,9 @@ namespace DNANeuralNet
             layers[outputLayerIndex].ParallelCalculateOutputLayerNodeValues(layerDatas[outputLayerIndex], expectedOutputs, cost);
 
             //Update output layer gradients
-            
-            //Idk why I need this but it works only if I have this for some reason
-            
-            /*
-            foreach (DNALayerLearnData layerData in layerDatas[outputLayerIndex])
-            {
-                layers[outputLayerIndex].UpdateGradients(layerData);
-            }
-            */
-            
-            
             layers[outputLayerIndex].ParallelUpdateGradients(layerDatas[outputLayerIndex]);
 
             System.DateTime parallelOperations = System.DateTime.Now;
-
 
             //Update All Hidden layer gradients
             for (int i = outputLayerIndex - 1; i >= 0; i--)
@@ -168,7 +156,6 @@ namespace DNANeuralNet
 
             System.DateTime leftover = System.DateTime.Now;
 
-
             double totalTime = (leftover - startTime).TotalSeconds;
 
             double formatTime = 100.0 * (format - startTime).TotalSeconds / totalTime;
@@ -176,7 +163,6 @@ namespace DNANeuralNet
             double leftOverTime = 100.0 * (leftover - parallelOperations).TotalSeconds / totalTime;
 
           //  Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
-
         }
 
         private DNAMatrix[] GetNodeValues (DNALayerLearnData[] layerData)
