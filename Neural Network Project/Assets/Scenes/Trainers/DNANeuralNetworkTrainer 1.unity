@@ -1490,6 +1490,7 @@ MonoBehaviour:
   - ImageProcessing/1
   - ImageProcessing/2
   - ImageProcessing/3
+  UseParallelization: 1
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
@@ -1501,7 +1502,7 @@ MonoBehaviour:
   trainingSplit: 0.8
   errorImagePath: 
   networkSettings:
-    networkSize: 10030000200000002000000004000000
+    networkSize: 100300002c01000004000000
     activationType: 0
     outputActivationType: 0
     costType: 0

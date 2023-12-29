@@ -23,6 +23,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     [Header("ImportImages")]
     [SerializeField] List<string> trainingFolderPaths = new List<string>();
     // [SerializeField] List<string> testingFolderPaths = new List<string>();
+    [SerializeField] bool UseParallelization;
     [SerializeField] bool useFolders;
     [SerializeField] bool processImages;
     [SerializeField] bool saveImportedTrainingImages;
@@ -33,6 +34,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     [SerializeField] bool whiteBackground;
 
     [Header("Train Network")]
+    [SerializeField] int evaluateIndex;
     [SerializeField] int reshuffleIndex;
     [SerializeField] int numOfEpochs;
     [Range(0, 1)] public float trainingSplit;
@@ -79,7 +81,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public IEnumerator importFromFolder(List<string> paths, List<DNADataPoint> data)
@@ -106,11 +108,11 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             for (int j = 0; j < newImages[i].Count; j++)
             {
                 System.Random rng = new System.Random(Random.Range(0, 1000));
-                
+
 
                 int subImages = (int)Random.Range(minCopies, maxCopies);
 
-                for (int g = 0; g < subImages; g ++)
+                for (int g = 0; g < subImages; g++)
                 {
                     Texture2D img = newImages[i][j];
 
@@ -206,7 +208,6 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         {
             if (epoch % reshuffleIndex == 0)
             {
-
                 yield return StartCoroutine(ShuffleArray(allData));
 
                 yield return StartCoroutine(ShuffleArray(evaluateData));
@@ -233,7 +234,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                         batches[i].addData(allTrainData[networkSettings.dataPerBatch * i + j], j);
                     }
 
-                    Percent.text = (float)i / numOfBatches * 100 + " % ";
+                    Percent.text = "Batching: " + (float)i / numOfBatches * 100 + " % ";
                     PercentSlider.value = (float)i / numOfBatches;
                     yield return null;
                 }
@@ -245,19 +246,21 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             createLine("Epoch: " + epoch);
 
             //Shuffle Batches
-            yield return StartCoroutine(ShuffleArray(batches));
+           // yield return StartCoroutine(ShuffleArray(batches));
 
             // StartCoroutine(displayCost(false, false, neuro, evaluateData));
 
             // StartCoroutine(displayCost(true, false, neuro, evaluateData));
 
             System.DateTime startTime = System.DateTime.UtcNow;
-            
+
             //Teaching
             for (int i = 0; i < batches.Length; i++)
             {
-               
-                neuro.Learn(batches[i].data,  currentLearningRate, networkSettings.regularization, networkSettings.momentum);
+                if (UseParallelization)
+                    neuro.ParallelLearn(batches[i].data, currentLearningRate, networkSettings.regularization, networkSettings.momentum);
+                else
+                    neuro.Learn(batches[i].data, currentLearningRate, networkSettings.regularization, networkSettings.momentum);
 
                 Percent.text = "Teaching: " + (float)i / numOfBatches * 100 + " % ";
                 PercentSlider.value = (float)i / numOfBatches;
@@ -265,22 +268,22 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             }
             System.DateTime endTime = System.DateTime.UtcNow;
 
-            Debug.Log("Training Time (sec): " + (endTime - startTime).TotalSeconds);
+            Debug.Log($"Epoch:{epoch} Training Time (sec): " + (endTime - startTime).TotalSeconds);
 
             //  StartCoroutine(displayCost(false, true, neuro, evaluateData));
 
-            yield return StartCoroutine(displayCost(true, true, neuro, evaluateData));
+            if (epoch % evaluateIndex == 0)
+            {
+                yield return StartCoroutine(displayCost(true, true, neuro, evaluateData));
 
-            yield return StartCoroutine(EvaluateNetwork(neuro, evaluateData));
-
+                yield return StartCoroutine(EvaluateNetwork(neuro, evaluateData));
+            }
         }
 
         //Once Finished
         createLine("Finished");
-       // createLine("Total Time elapsed: " + (trainEnd - startTime));
+        // createLine("Total Time elapsed: " + (trainEnd - startTime));
         yield return null;
-
-
     }
 
     public IEnumerator EvaluateNetwork(DNANeuralNetwork neuro, DNADataPoint[] data)
@@ -321,7 +324,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                 }
                 else
                 {
-                   // dataToImage(data[i], classify.ToString(), errorImagePath, i);
+                    // dataToImage(data[i], classify.ToString(), errorImagePath, i);
                 }
             }
 
@@ -345,7 +348,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         //yield return StartCoroutine(saveBestNetwork(neuro, actualAccuracy, data));
     }
 
-   
+
     public void createLine(string message)
     {
         GameObject line = Instantiate(logLine, content);
@@ -396,7 +399,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     public DNADataPoint imageToData(Texture2D image, int labelIndex, int labelNum)
     {
 
-         DNAMatrix pixels = new DNAMatrix(image.height * image.width, 1);
+        DNAMatrix pixels = new DNAMatrix(image.height * image.width, 1);
 
         for (int x = 0; x < image.width; x++)
         {
@@ -429,7 +432,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     bestCost = cost;
                 else
                     currentLearningRate = currentLearningRate / 2;
-                
+
                 yield return null;
             }
             else
@@ -724,7 +727,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     bestNetwork = network;
                     createLine("New Best Network Made");
 
-                   // Debug.Log("New Best Network Made");
+                    // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
                 }
@@ -734,7 +737,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                     lastAccuracy = accuracy;
 
                     createLine("New Best Network Made");
-                   // Debug.Log("New Best Network Made");
+                    // Debug.Log("New Best Network Made");
 
                     saveNetwork(bestNetwork, NeuralNetworkName + " (Best)");
 
