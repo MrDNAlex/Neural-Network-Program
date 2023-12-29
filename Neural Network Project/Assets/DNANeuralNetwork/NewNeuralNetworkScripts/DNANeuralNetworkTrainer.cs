@@ -29,9 +29,10 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     [SerializeField] bool saveImportedTrainingImages;
 
     [Header("Image Processing")]
-    [SerializeField] int maxCopies;
-    [SerializeField] int minCopies;
+    [SerializeField] int Copies;
+   // [SerializeField] int minCopies;
     [SerializeField] bool whiteBackground;
+    
 
     [Header("Train Network")]
     [SerializeField] int evaluateIndex;
@@ -109,10 +110,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             {
                 System.Random rng = new System.Random(Random.Range(0, 1000));
 
-
-                int subImages = (int)Random.Range(minCopies, maxCopies);
-
-                for (int g = 0; g < subImages; g++)
+                for (int g = 0; g < Copies; g++)
                 {
                     Texture2D img = newImages[i][j];
 
@@ -128,11 +126,11 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
                             //Maybe remove the thresholds
                             //Process images individually
 
-                            double scale = 1 + RandomInNormalDistribution(rng) * 0.175;//0.1
+                            double scale = 1 + RandomInNormalDistribution(rng) * 0.1;//0.1
 
                             img = ApplyScale(img, (float)scale);
 
-                            float angle = (float)RandomInNormalDistribution(rng) * 15;//10
+                            float angle = (float)RandomInNormalDistribution(rng) * 10;//10
 
                             //Apply Rotation
                             img = ApplyRotation(img, angle);
@@ -468,9 +466,6 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
     public Texture2D ApplyNoise(Texture2D image)
     {
-        //5% of pixels get noise
-
-
         //Number determines the seed to use
         System.Random rng = new System.Random(Random.Range(0, 100000));
 

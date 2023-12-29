@@ -66,8 +66,8 @@ namespace DNANeuralNet
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs)
         {
-            if (layerOutputGPU != null)
-                return layerOutputCalculationGPU(inputs);
+            if (LayerOutputGPU != null)
+                return LayerOutputCalculationTrainingGPU(inputs).activation;
             else
                 return activation.Activate((weights * inputs) + biases);
         }
@@ -76,9 +76,9 @@ namespace DNANeuralNet
         {
             learnData.inputs = inputs;
 
-            if (layerOutputGPU != null)
+            if (LayerOutputGPU != null)
             {
-                (DNAMatrix weightedInputs, DNAMatrix activation) = layerOutputCalculationTrainingGPU(inputs);
+                (DNAMatrix weightedInputs, DNAMatrix activation) = LayerOutputCalculationTrainingGPU(inputs);
 
                 //Calculate the outputs
                 learnData.weightedInputs = weightedInputs;
@@ -100,7 +100,7 @@ namespace DNANeuralNet
 
         public double[] ParallelCalculateOutputs(double[] inputs, DNAParallelLayerLearnData learnData) //DNALayerLearnData[] learnData
         {
-            (double[] weightedInputs, double[] activation) = parallelLayerOutputCalculationTrainingGPU(inputs);
+            (double[] weightedInputs, double[] activation) = ParallelLayerOutputCalculationTrainingGPU(inputs);
 
             //Set the Inputs
             learnData.inputs = inputs;
@@ -174,9 +174,9 @@ namespace DNANeuralNet
 
         public void ParallelUpdateGradients(DNAParallelLayerLearnData layerLearnData)
         {
-            _costGradientBias += ParallelUpdateGradientsBias(layerLearnData);
+            _costGradientBias += ParallelUpdateGradientsBiasGPU(layerLearnData);
 
-            _costGradientWeight += ParallelUpdateGradientsWeights(layerLearnData);
+            _costGradientWeight += ParallelUpdateGradientsWeightsGPU(layerLearnData);
         }
 
         public void SetActivationFunction(IDNAActivation activation)
@@ -210,135 +210,50 @@ namespace DNANeuralNet
             biasVals.SetData(biases.Values);
         }
 
-        public static ComputeShader layerOutputGPU;
-
-        public static ComputeShader parallelLayerOutputGPU;
-
-        // public static ComputeShader parallelLoader;
-
-        public static ComputeShader parallelOutputLayer;
-
-        public static ComputeShader parallelUpdateGradientsWeights;
-        public static ComputeShader parallelUpdateGradientsBias;
-
-        public static ComputeShader UpdateGradientsWeights;
-
-        public static ComputeShader UpdateGradientBias;
-
+        public static ComputeShader LayerOutputGPU;
+        public static ComputeShader ParallelLayerOutputGPU;
+        public static ComputeShader ParallelOutputLayer;
+        public static ComputeShader ParallelUpdateGradientsWeights;
+        public static ComputeShader ParallelUpdateGradientsBias;
         public static ComputeShader ParallelHiddenLayerNode;
-        public static ComputeShader HiddenLayerNode;
-
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         public static void loadAssets()
         {
-            layerOutputGPU = Resources.Load<ComputeShader>("LayerOutputCalculation");
-            parallelLayerOutputGPU = Resources.Load<ComputeShader>("ParrallelLayerOperation");
-            parallelOutputLayer = Resources.Load<ComputeShader>("ParallelOutputLayer");
-            parallelUpdateGradientsWeights = Resources.Load<ComputeShader>("ParallelUpdateGradientsWeights");
-            parallelUpdateGradientsBias = Resources.Load<ComputeShader>("ParallelUpdateGradientsBias");
-            UpdateGradientsWeights = Resources.Load<ComputeShader>("UpdateGradientWeights");
+            LayerOutputGPU = Resources.Load<ComputeShader>("LayerOutputCalculation");
+            ParallelLayerOutputGPU = Resources.Load<ComputeShader>("ParrallelLayerOperation");
+            ParallelOutputLayer = Resources.Load<ComputeShader>("ParallelOutputLayer");
+            ParallelUpdateGradientsWeights = Resources.Load<ComputeShader>("ParallelUpdateGradientsWeights");
+            ParallelUpdateGradientsBias = Resources.Load<ComputeShader>("ParallelUpdateGradientsBias");
             ParallelHiddenLayerNode = Resources.Load<ComputeShader>("ParallelHiddenLayerNode");
-            HiddenLayerNode = Resources.Load<ComputeShader>("HiddenLayerNode");
-            UpdateGradientBias = Resources.Load<ComputeShader>("UpdateGradientBias");
 
-            if (layerOutputGPU != null)
+            if (LayerOutputGPU != null)
             {
                 Debug.Log("Loaded!");
             }
-            if (parallelLayerOutputGPU != null)
+            if (ParallelLayerOutputGPU != null)
             {
                 Debug.Log("Parallel Loaded!");
             }
-            if (parallelOutputLayer != null)
+            if (ParallelOutputLayer != null)
             {
                 Debug.Log("Parallel Output Loaded!");
             }
-            if (parallelUpdateGradientsWeights != null)
+            if (ParallelUpdateGradientsWeights != null)
             {
                 Debug.Log("Parallel Gradients Weights Loaded!");
             }
-            if (parallelUpdateGradientsBias != null)
+            if (ParallelUpdateGradientsBias != null)
             {
                 Debug.Log("Parallel Gradients Bias Loaded!");
-            }
-            if (UpdateGradientsWeights)
-            {
-                Debug.Log("Update Weights Loaded!");
             }
             if (ParallelHiddenLayerNode != null)
             {
                 Debug.Log("Parallel Hidden Layer Node");
             }
 
-            if (HiddenLayerNode != null)
-            {
-                Debug.Log("Hidden Layer Node");
-            }
-
-            if (UpdateGradientBias != null)
-            {
-                Debug.Log("Update Bias Loaded");
-            }
         }
 
-        private DNAMatrix layerOutputCalculationGPU(DNAMatrix inputs)
-        {
-            DNAMatrix activation = new DNAMatrix(0, 0);
-            if (weights.Width == inputs.Height)
-            {
-                activation = new DNAMatrix(weights.Height, inputs.Width);
-
-                ComputeShader computeShader = layerOutputGPU;
-
-                //Setup Compute Buffers
-                ComputeBuffer inputsVals = new ComputeBuffer(inputs.Length, sizeof(double));
-
-                ComputeBuffer activationVals = new ComputeBuffer(activation.Length, sizeof(double));
-                ComputeBuffer weightedInputVals = new ComputeBuffer(activation.Length, sizeof(double));
-
-                ComputeBuffer dimensions = new ComputeBuffer(3, sizeof(int) * 2);
-
-                ComputeBuffer activationFunction = new ComputeBuffer(1, sizeof(int));
-
-                //Set Data
-                inputsVals.SetData(inputs.Values);
-
-                activationFunction.SetData(new int[] { this.activation.GetActivationFunctionIndex() });
-
-                dimensions.SetData(new int[] { weights.Width, weights.Height, biases.Width, biases.Height, inputs.Width, inputs.Height });
-
-                //Set Buffers
-                computeShader.SetBuffer(0, "weights", weightsVals);
-                computeShader.SetBuffer(0, "inputs", inputsVals);
-                computeShader.SetBuffer(0, "bias", biasVals);
-
-                computeShader.SetBuffer(0, "dimensions", dimensions);
-
-                computeShader.SetBuffer(0, "weightedInputs", weightedInputVals);
-                computeShader.SetBuffer(0, "activation", activationVals);
-
-                computeShader.SetBuffer(0, "activationFunction", activationFunction);
-
-                //Calculate
-                computeShader.Dispatch(0, activation.Width, activation.Height, 1);
-
-                //Receaive Result
-                activationVals.GetData(activation.Values);
-
-                inputsVals.Release();
-                activationVals.Release();
-                weightedInputVals.Release();
-
-                activationFunction.Release();
-                dimensions.Release();
-            }
-            else
-                Debug.Log("Error, Dimensions don't match");
-
-            return activation;
-        }
-
-        private (DNAMatrix weightedInputs, DNAMatrix activation) layerOutputCalculationTrainingGPU(DNAMatrix inputs)
+        private (DNAMatrix weightedInputs, DNAMatrix activation) LayerOutputCalculationTrainingGPU(DNAMatrix inputs)
         {
             DNAMatrix activation = new DNAMatrix(0, 0);
             DNAMatrix weightedInputs = new DNAMatrix(0, 0);
@@ -347,7 +262,7 @@ namespace DNANeuralNet
                 activation = new DNAMatrix(weights.Height, inputs.Width);
                 weightedInputs = new DNAMatrix(weights.Height, inputs.Width);
 
-                ComputeShader computeShader = layerOutputGPU;
+                ComputeShader computeShader = LayerOutputGPU;
 
                 ComputeBuffer inputsVals = new ComputeBuffer(inputs.Length, sizeof(double));
 
@@ -398,7 +313,7 @@ namespace DNANeuralNet
             return (weightedInputs, activation);
         }
 
-        private (double[] weightedInputs, double[] activation) parallelLayerOutputCalculationTrainingGPU(double[] inputs)
+        private (double[] weightedInputs, double[] activation) ParallelLayerOutputCalculationTrainingGPU(double[] inputs)
         {
             int inputsLength = inputs.Length;
             int outputsLength = ParallelBatchSize * weights.Height * biases.Width;
@@ -406,7 +321,7 @@ namespace DNANeuralNet
             double[] activation = new double[outputsLength];
             double[] weightedInputs = new double[outputsLength];
            
-            ComputeShader computeShader = parallelLayerOutputGPU;
+            ComputeShader computeShader = ParallelLayerOutputGPU;
 
             //Setup Compute Buffers
             ComputeBuffer dimensions = new ComputeBuffer(3, sizeof(int) * 2);
@@ -448,29 +363,6 @@ namespace DNANeuralNet
             return (weightedInputs, activation);
         }
 
-        private double[] GetInputArray(DNAMatrix[] inputs)
-        {
-            double[] inputValues = new double[inputs.Length * inputs[0].Length];
-
-            int count = 0;
-            foreach (DNAMatrix matrix in inputs)
-            {
-                Array.Copy(matrix.Values, 0, inputValues, count, matrix.Values.Length);
-                count += matrix.Values.Length;
-            }
-
-            return inputValues;
-        }
-
-        private void ConvertToMatrices(DNAMatrix[] weightedInputs, double[] weightedInputsOutput, DNAMatrix[] activations, double[] activationsOutput)
-        {
-            for (int i = 0; i < weightedInputs.Length; i++)
-            {
-                Array.Copy(weightedInputsOutput, i * weightedInputs[i].Length, weightedInputs[i].Values, 0, weightedInputs[i].Length);
-                Array.Copy(activationsOutput, i * activations[i].Length, activations[i].Values, 0, activations[i].Length);
-            }
-        }
-
         //Parallel Version
         public void ParallelCalculateOutputLayerNodeValues(DNAParallelLayerLearnData layerLearnData, double[] expectedOutput, IDNACost cost, DNAMatrix expectedOutputDim)
         {
@@ -479,7 +371,7 @@ namespace DNANeuralNet
             int activationLength = layerLearnData.activations.Length;
             int nodeValuesLength = layerLearnData.nodeValues.Length;
 
-            ComputeShader computeShader = parallelOutputLayer;
+            ComputeShader computeShader = ParallelOutputLayer;
 
             //Setup Compute Buffers
             ComputeBuffer dimensions = new ComputeBuffer(1, sizeof(int) * 2);
@@ -531,49 +423,13 @@ namespace DNANeuralNet
             derivativeTypes.Release();
         }
 
-        private double[] GetWeightedInputs(DNALayerLearnData[] layerLearnData)
-        {
-            double[] weightedInputs = new double[layerLearnData.Length * layerLearnData[0].weightedInputs.Length];
-
-            int count = 0;
-            foreach (DNALayerLearnData layer in layerLearnData)
-            {
-                Array.Copy(layer.weightedInputs.Values, 0, weightedInputs, count, layer.weightedInputs.Length);
-                count += layer.weightedInputs.Values.Length;
-            }
-
-            return weightedInputs;
-        }
-
-        private double[] GetActivationInputs(DNALayerLearnData[] layerLearnData)
-        {
-            double[] activations = new double[layerLearnData.Length * layerLearnData[0].activations.Length];
-
-            int count = 0;
-            foreach (DNALayerLearnData layer in layerLearnData)
-            {
-                Array.Copy(layer.activations.Values, 0, activations, count, layer.activations.Length);
-                count += layer.activations.Values.Length;
-            }
-
-            return activations;
-        }
-
-        private void SetNodeValues(double[] nodeValues, DNALayerLearnData[] layerLearnData)
-        {
-            for (int i = 0; i < layerLearnData.Length; i++)
-            {
-                Array.Copy(nodeValues, i * layerLearnData[i].nodeValues.Length, layerLearnData[i].nodeValues.Values, 0, layerLearnData[i].nodeValues.Length);
-            }
-        }
-
-        public DNAMatrix ParallelUpdateGradientsWeights(DNAParallelLayerLearnData layerLearnData)
+        public DNAMatrix ParallelUpdateGradientsWeightsGPU(DNAParallelLayerLearnData layerLearnData)
         {
             int inputsLength = layerLearnData.inputs.Length;
             int nodeValuesLength = layerLearnData.nodeValues.Length;
             int costGradientWeightLength = _costGradientWeight.Length;
 
-            ComputeShader computeShader = parallelUpdateGradientsWeights;
+            ComputeShader computeShader = ParallelUpdateGradientsWeights;
 
             //Setup Compute Buffers
             ComputeBuffer dimensions = new ComputeBuffer(3, sizeof(int) * 2);
@@ -616,12 +472,12 @@ namespace DNANeuralNet
             return costGradientWeight;
         }
 
-        public DNAMatrix ParallelUpdateGradientsBias(DNAParallelLayerLearnData layerLearnData)
+        public DNAMatrix ParallelUpdateGradientsBiasGPU(DNAParallelLayerLearnData layerLearnData)
         {
             int nodeValuesLength = layerLearnData.nodeValues.Length;
             int costGradientBiasLength = _costGradientBias.Length;
 
-            ComputeShader computeShader = parallelUpdateGradientsBias;
+            ComputeShader computeShader = ParallelUpdateGradientsBias;
 
             //Setup Compute Buffers
             ComputeBuffer dimensions = new ComputeBuffer(1, sizeof(int) * 2);
@@ -657,135 +513,6 @@ namespace DNANeuralNet
             dimensions.Release();
 
             return costGradientBias;
-        }
-
-        private double[] GetGradientInputVals(DNALayerLearnData[] layerLearnData)
-        {
-            double[] inputs = new double[layerLearnData.Length * layerLearnData[0].inputs.Length];
-
-            int count = 0;
-            foreach (DNALayerLearnData layer in layerLearnData)
-            {
-                Array.Copy(layer.inputs.Values, 0, inputs, count, layer.inputs.Length); //Inputs are normally transposed
-                count += layer.inputs.Values.Length;
-            }
-
-            return inputs;
-        }
-
-        private double[] GetGradientNodeVals(DNALayerLearnData[] layerLearnData)
-        {
-            double[] nodeVals = new double[layerLearnData.Length * layerLearnData[0].nodeValues.Length];
-
-            string values = "";
-            int count = 0;
-            foreach (DNALayerLearnData layer in layerLearnData)
-            {
-                Array.Copy(layer.nodeValues.Values, 0, nodeVals, count, layer.nodeValues.Length);
-                count += layer.nodeValues.Values.Length;
-                values += "\n";
-            }
-
-            return nodeVals;
-        }
-
-        public DNAMatrix GetUpdateGradientBias(DNALayerLearnData layerLearnData)
-        {
-            int nodeValuesLength = layerLearnData.nodeValues.Length;
-            int costGradientBiasLength = _costGradientBias.Length;
-
-            ComputeShader computeShader = UpdateGradientBias;
-
-            //Setup Compute Buffers
-            ComputeBuffer dimensions = new ComputeBuffer(1, sizeof(int) * 2);
-
-            ComputeBuffer nodeValuesValues = new ComputeBuffer(nodeValuesLength, sizeof(double));
-
-            ComputeBuffer biasValues = new ComputeBuffer(costGradientBiasLength, sizeof(double));
-
-            //Set Data
-            dimensions.SetData(new int[] { layerLearnData.nodeValues.Width, layerLearnData.nodeValues.Height });
-
-            nodeValuesValues.SetData(layerLearnData.nodeValues.Values);
-
-            biasValues.SetData(new double[costGradientBiasLength]);
-
-            //Set Buffers
-            computeShader.SetBuffer(0, "dimensions", dimensions);
-
-            computeShader.SetBuffer(0, "nodeValues", nodeValuesValues);
-            computeShader.SetBuffer(0, "costGradientBias", biasValues);
-
-            //Calculate
-            Debug.Log($"Width: {_costGradientBias.Width}  Height:{_costGradientBias.Height}");
-            computeShader.Dispatch(0, _costGradientBias.Width, _costGradientBias.Height, 1);
-
-            DNAMatrix costGradientBias = new DNAMatrix(_costGradientBias.Height, _costGradientBias.Width);
-
-            //Receive Result
-            biasValues.GetData(costGradientBias.Values);
-
-            costGradientBias.DisplayMat();
-            //Set Values
-            // _costGradientBias.Values = costGradientBias;
-
-            //Clear Memory
-            nodeValuesValues.Release();
-            biasValues.Release();
-            dimensions.Release();
-
-            return costGradientBias;
-        }
-
-        public DNAMatrix UpdateGradientsWeight(DNALayerLearnData layerLearnData)
-        {
-            int inputsLength = layerLearnData.inputs.Length;
-            int nodeValuesLength = layerLearnData.nodeValues.Length;
-            int costGradientWeightLength = _costGradientWeight.Length;
-
-            ComputeShader computeShader = UpdateGradientsWeights;
-
-            //Setup Compute Buffers
-            ComputeBuffer dimensions = new ComputeBuffer(2, sizeof(uint) * 2);
-
-            ComputeBuffer nodeValuesValues = new ComputeBuffer(nodeValuesLength, sizeof(double));
-
-            ComputeBuffer inputsValues = new ComputeBuffer(inputsLength, sizeof(double));
-
-            ComputeBuffer weightsValues = new ComputeBuffer(costGradientWeightLength, sizeof(double));
-
-            //Set Data
-            dimensions.SetData(new uint[] { (uint)layerLearnData.nodeValues.Width, (uint)layerLearnData.nodeValues.Height, (uint)layerLearnData.inputs.Height, (uint)layerLearnData.inputs.Width }); //Used to be height, width
-
-            inputsValues.SetData(layerLearnData.inputs.Values); // Used to be transpose
-
-            nodeValuesValues.SetData(layerLearnData.nodeValues.Values);
-
-            weightsValues.SetData(new double[costGradientWeightLength]);
-
-            //Set Buffers
-            computeShader.SetBuffer(0, "dimensions", dimensions);
-
-            computeShader.SetBuffer(0, "inputs", inputsValues);
-            computeShader.SetBuffer(0, "nodeValues", nodeValuesValues);
-            computeShader.SetBuffer(0, "costGradient", weightsValues);
-
-            //Calculate
-            computeShader.Dispatch(0, _costGradientWeight.Width, _costGradientWeight.Height, 1);
-
-            DNAMatrix costGradientWeight = new DNAMatrix(_costGradientWeight.Height, _costGradientWeight.Width);
-
-            //Receive Result
-            weightsValues.GetData(costGradientWeight.Values);
-
-            //Clear Memory
-            inputsValues.Release();
-            nodeValuesValues.Release();
-            weightsValues.Release();
-
-            dimensions.Release();
-
-            return costGradientWeight;
         }
 
         public void ParallelHiddenLayerNodeCalc(DNAParallelLayerLearnData layerLearnData, DNALayer oldLayer, double[] oldNodeValues)
@@ -834,99 +561,6 @@ namespace DNANeuralNet
             oldNodeVals.Release();
             nodeValues.Release();
             dimensions.Release();
-        }
-
-        private DNAMatrix HiddenLayerNodeCalc(DNALayerLearnData layerLearnData, DNALayer oldLayer, DNAMatrix oldNodeValues)
-        {
-            int layerLearnDataLength = layerLearnData.weightedInputs.Length;
-            int oldNodeValuesLength = oldNodeValues.Length * oldNodeValues.Length;
-            int oldLayerWeightsLength = oldLayer.weights.Length;
-            int nodeValuesLength = layerLearnData.nodeValues.Length;
-
-            ComputeShader computeShader = HiddenLayerNode;
-
-            //Oldlayer Weights, OldNodeVals, weightedInputs, derivative type, dimensions
-
-            ComputeBuffer dimensions = new ComputeBuffer(4, sizeof(int) * 2);
-            ComputeBuffer oldLayerWeights = new ComputeBuffer(oldLayerWeightsLength, sizeof(double));
-            ComputeBuffer oldNodeVals = new ComputeBuffer(oldNodeValuesLength, sizeof(double));
-            ComputeBuffer weightedInputs = new ComputeBuffer(layerLearnDataLength, sizeof(double));
-            ComputeBuffer nodeValues = new ComputeBuffer(nodeValuesLength, sizeof(double));
-            ComputeBuffer activationDerivative = new ComputeBuffer(1, sizeof(int));
-
-            //Set Data                                         old Layer is switched because it is transposed
-            dimensions.SetData(new int[] { oldLayer.weights.Height, oldLayer.weights.Width, oldNodeValues.Width, oldNodeValues.Height, layerLearnData.weightedInputs.Width, layerLearnData.weightedInputs.Height, layerLearnData.nodeValues.Width, layerLearnData.nodeValues.Height });
-            oldLayerWeights.SetData(oldLayer.weights.Values);
-            oldNodeVals.SetData(oldNodeValues.Values);
-            weightedInputs.SetData(layerLearnData.weightedInputs.Values);
-            nodeValues.SetData(new double[nodeValuesLength]);
-            activationDerivative.SetData(new int[] { this.activation.GetActivationFunctionIndex() });
-
-            //Set Buffers
-            computeShader.SetBuffer(0, "dimensions", dimensions);
-            computeShader.SetBuffer(0, "weightedInputs", weightedInputs);
-            computeShader.SetBuffer(0, "oldNodeValues", oldNodeVals);
-            computeShader.SetBuffer(0, "oldLayerWeights", oldLayerWeights);
-            computeShader.SetBuffer(0, "nodeValues", nodeValues);
-            computeShader.SetBuffer(0, "activationDerivative", activationDerivative);
-
-            //Calculate
-            computeShader.Dispatch(0, layerLearnData.nodeValues.Width, layerLearnData.nodeValues.Height, 1);
-
-            //Receive Result
-            double[] nodeVals = new double[nodeValuesLength];
-
-            nodeValues.GetData(nodeVals);
-
-            DNAMatrix matrix = new DNAMatrix(layerLearnData.nodeValues.Height, layerLearnData.nodeValues.Width);
-
-            matrix.Values = nodeVals;
-
-            //Clear Memory
-            weightedInputs.Release();
-            activationDerivative.Release();
-            oldLayerWeights.Release();
-            oldNodeVals.Release();
-            nodeValues.Release();
-            dimensions.Release();
-
-            return matrix;
-        }
-
-        public double[] OldNodeValArray(DNAMatrix[] oldNodeVals)
-        {
-            double[] nodeVals = new double[oldNodeVals.Length * oldNodeVals[0].Length];
-
-            int count = 0;
-            foreach (DNAMatrix matrix in oldNodeVals)
-            {
-                Array.Copy(matrix.Values, 0, nodeVals, count, matrix.Length);
-                count += matrix.Length;
-            }
-
-            return nodeVals;
-        }
-
-        private double[] WeightedInputs(DNALayerLearnData[] layerLearnData)
-        {
-            double[] weightedInputs = new double[layerLearnData.Length * layerLearnData[0].weightedInputs.Length];
-
-            int count = 0;
-            foreach (DNALayerLearnData layer in layerLearnData)
-            {
-                Array.Copy(layer.weightedInputs.Values, 0, weightedInputs, count, layer.weightedInputs.Length);
-                count += layer.weightedInputs.Values.Length;
-            }
-
-            return weightedInputs;
-        }
-
-        private void SetHiddenNodeValues(double[] nodeValues, DNALayerLearnData[] layerLearnData)
-        {
-            for (int i = 0; i < layerLearnData.Length; i++)
-            {
-                Array.Copy(nodeValues, i * layerLearnData[i].nodeValues.Length, layerLearnData[i].nodeValues.Values, 0, layerLearnData[i].nodeValues.Length);
-            }
         }
     }
 }

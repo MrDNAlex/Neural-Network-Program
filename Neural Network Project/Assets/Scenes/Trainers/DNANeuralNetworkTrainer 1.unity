@@ -1494,15 +1494,15 @@ MonoBehaviour:
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
-  maxCopies: 1
-  minCopies: 1
+  Copies: 1
   whiteBackground: 0
-  reshuffleIndex: 5
+  evaluateIndex: 5
+  reshuffleIndex: 10
   numOfEpochs: 70
-  trainingSplit: 0.8
+  trainingSplit: 0.9
   errorImagePath: 
   networkSettings:
-    networkSize: 100300002c01000004000000
+    networkSize: 10030000200000002000000004000000
     activationType: 0
     outputActivationType: 0
     costType: 0
