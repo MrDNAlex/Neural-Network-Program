@@ -1501,7 +1501,7 @@ MonoBehaviour:
   trainingSplit: 0.8
   errorImagePath: 
   networkSettings:
-    networkSize: 100300002c01000004000000
+    networkSize: 10030000200000002000000004000000
     activationType: 0
     outputActivationType: 0
     costType: 0

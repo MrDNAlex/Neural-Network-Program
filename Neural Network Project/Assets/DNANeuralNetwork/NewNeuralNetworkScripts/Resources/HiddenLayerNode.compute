@@ -24,9 +24,9 @@ float expSum = 0;
 // 0                     1                 2                3 
 //OldLayerWeights, Old Node Vals,  Weighted Inputs, output Node Values
 
-int WeightedInputIndex(int row, int col)
+int OldLayerWeights(int row, int col)
 {
-    return (row * dimensions[2].width + col);
+    return col * dimensions[0].height + row;
 }
 
 int OldNodeIndex(int row, int col)
@@ -34,9 +34,9 @@ int OldNodeIndex(int row, int col)
     return (row * dimensions[1].width + col);
 }
 
-int OldLayerWeights(int row, int col)
+int WeightedInputIndex(int row, int col)
 {
-    return row * dimensions[0].width + col;
+    return (row * dimensions[2].width + col);
 }
 
 int OutputNodeIndex(int row, int col)
@@ -125,5 +125,4 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     //int matrixIndex = DispatchThreadID.z;
     
     nodeValues[OutputNodeIndex(row, col)] = DotProduct(row, col) * GetActivationDerivative(OutputNodeIndex(row, col));
-    // 
 }

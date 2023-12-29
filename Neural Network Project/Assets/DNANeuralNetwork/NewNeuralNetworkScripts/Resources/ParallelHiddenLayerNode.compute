@@ -13,21 +13,23 @@ struct MatrixDimensions
 };
 
 RWStructuredBuffer<MatrixDimensions> dimensions;
+
 RWStructuredBuffer<double> oldNodeValues;
+
 RWStructuredBuffer<double> oldLayerWeights;
+
 RWStructuredBuffer<double> nodeValues;
+
 RWStructuredBuffer<double> weightedInputs;
+
 RWStructuredBuffer<int> activationDerivative;
 
 //Exponential Sum
 float expSum = 0;
 
-// 0                     1                 2                3 
-//OldLayerWeights, Old Node Vals,  Weighted Inputs, output Node Values
-
 int OldLayerWeights(int row, int col)
 {
-    return row * dimensions[0].width + col;
+    return col * dimensions[0].height + row;
 }
 
 int OldNodeIndex(int row, int col, int matrixIndex)
@@ -119,7 +121,7 @@ double GetActivationDerivative(int index)
     return activation;
 }
 
-[numthreads(1,1,1)]
+[numthreads(1, 1, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     int row = DispatchThreadID.y;
@@ -129,19 +131,3 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     nodeValues[OutputNodeIndex(row, col, matrixIndex)] = DotProduct(row, col, matrixIndex) * GetActivationDerivative(OutputNodeIndex(row, col, matrixIndex));
     
 }
-
-/*
-    OPERATION
-    
-     DNAMatrix newNodeValues = oldLayer.weights.Transpose() * oldNodeValues;
-
-            DNAMatrix derivative = activation.Derivative(layerLearnData.weightedInputs);
-
-            for (int newNodeIndex = 0; newNodeIndex < newNodeValues.Values.Length; newNodeIndex++)
-                newNodeValues[newNodeIndex] *= derivative[newNodeIndex];
-
-            layerLearnData.nodeValues = newNodeValues;
-
-*/
-
-
