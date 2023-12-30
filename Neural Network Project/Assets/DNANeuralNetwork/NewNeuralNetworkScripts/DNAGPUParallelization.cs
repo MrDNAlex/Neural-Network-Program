@@ -27,12 +27,12 @@ namespace DNANeuralNet
         /// <summary>
         /// Getter and Setter for the Layers Cost Gradient Bias
         /// </summary>
-        public DNAMatrix _costGradientBias { get { return Layer._costGradientBias; } set { Layer._costGradientBias = value; } }
+        public DNAMatrix _costGradientBias { get { return Layer.CostGradientBias; } set { Layer.CostGradientBias = value; } }
 
         /// <summary>
         /// Getter and Setter for the Layers Cost Gradient Weights
         /// </summary>
-        public DNAMatrix _costGradientWeight { get { return Layer._costGradientWeight; } set { Layer._costGradientWeight = value; } }
+        public DNAMatrix _costGradientWeight { get { return Layer.CostGradientWeight; } set { Layer.CostGradientWeight = value; } }
 
         /// <summary>
         /// Reference to the Layer

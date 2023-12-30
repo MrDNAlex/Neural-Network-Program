@@ -10,8 +10,8 @@ namespace DNANeuralNet
     [System.Serializable]
     public class DNANeuralNetwork
     {
-        public DNALayer[] layers;
         public int[] layerSizes;
+        public DNALayer[] layers;
 
         public IDNACost cost;
         System.Random rng;
@@ -80,7 +80,7 @@ namespace DNANeuralNet
             return costVal;
         }
 
-        public void ParallelLearn (DNADataPoint[] trainingData, double learnRate, double regularization = 0, double momentum = 0)
+        public void ParallelLearn(DNADataPoint[] trainingData, double learnRate, double regularization = 0, double momentum = 0)
         {
             DNAParallelNetworkLearnData batchLearnData = new DNAParallelNetworkLearnData(layers, trainingData.Length);
 
@@ -118,7 +118,7 @@ namespace DNANeuralNet
 
         void ParallelUpdateGradients(DNADataPoint[] data, DNAParallelNetworkLearnData learnData)
         {
-            System.DateTime startTime = System.DateTime.Now;
+            //System.DateTime startTime = System.DateTime.Now;
 
             double[] inputsToNextLayer = new double[data.Length * data[0].inputs.Length];
             double[] expectedOutputs = new double[data.Length * data[0].expectedOutputs.Length];
@@ -130,11 +130,11 @@ namespace DNANeuralNet
                 Array.Copy(data[i].expectedOutputs.Values, 0, expectedOutputs, countOutput, data[i].expectedOutputs.Values.Length);
                 countOutput += data[i].expectedOutputs.Values.Length;
 
-                Array.Copy(data[i].inputs.Values, 0, inputsToNextLayer , countInput, data[i].inputs.Values.Length);
+                Array.Copy(data[i].inputs.Values, 0, inputsToNextLayer, countInput, data[i].inputs.Values.Length);
                 countInput += data[i].inputs.Values.Length;
             }
 
-            System.DateTime format = System.DateTime.Now;
+            // System.DateTime format = System.DateTime.Now;
 
             for (int i = 0; i < layers.Length; i++)
             {
@@ -150,26 +150,27 @@ namespace DNANeuralNet
             //Update output layer gradients
             layers[outputLayerIndex].ParallelUpdateGradients(learnData.layerData[outputLayerIndex]);
 
-            System.DateTime parallelOperations = System.DateTime.Now;
+            // System.DateTime parallelOperations = System.DateTime.Now;
 
             //Update All Hidden layer gradients
             for (int i = outputLayerIndex - 1; i >= 0; i--)
             {
                 DNALayer hiddenLayer = layers[i];
 
-                hiddenLayer.ParallelCalculateHiddenLayerNodeValues(learnData.layerData[i], layers[i + 1], learnData.layerData[i+1].nodeValues);
+                hiddenLayer.ParallelCalculateHiddenLayerNodeValues(learnData.layerData[i], layers[i + 1], learnData.layerData[i + 1].nodeValues);
                 hiddenLayer.ParallelUpdateGradients(learnData.layerData[i]);
             }
 
-            System.DateTime leftover = System.DateTime.Now;
+            // System.DateTime leftover = System.DateTime.Now;
 
+            /*
             double totalTime = (leftover - startTime).TotalSeconds;
 
             double formatTime = 100.0 * (format - startTime).TotalSeconds / totalTime;
             double layerTime = 100.0 * (parallelOperations - format).TotalSeconds / totalTime;
             double leftOverTime = 100.0 * (leftover - parallelOperations).TotalSeconds / totalTime;
-
-            //  Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
+            */
+            //Debug.Log($"Format:{formatTime}    Parallel Operations:{layerTime}     Left Over:{leftOverTime}");
         }
 
         void UpdateGradients(DNADataPoint data, DNANetworkLearnData learnData)
@@ -211,7 +212,7 @@ namespace DNANeuralNet
             double layerTime = 100.0 * (layerOperation - startTime).TotalSeconds / totalTime;
             double leftOverTime = 100.0 * (leftover - layerOperation).TotalSeconds / totalTime;
 
-           // Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
+            // Debug.Log($"Layer Operation:{layerTime}     Left Over:{leftOverTime}");
         }
 
         public void SetCostFunction(IDNACost costFunction)
@@ -222,6 +223,24 @@ namespace DNANeuralNet
         public void SetActivationFunction(IDNAActivation activation)
         {
             SetActivationFunction(activation, activation);
+        }
+
+        public void InitializeFromLoad()
+        {
+            SetSavedActivationFunction();
+            InitializeParallelization();
+        }
+
+        public void SetSavedActivationFunction()
+        {
+            foreach (DNALayer layer in layers)
+                layer.SetSavedActivationFunction();
+        }
+
+        public void InitializeParallelization()
+        {
+            foreach (DNALayer layer in layers)
+                layer.InitializeParallelization();
         }
 
         public void SetActivationFunction(IDNAActivation activation, IDNAActivation outputLayerActivation)

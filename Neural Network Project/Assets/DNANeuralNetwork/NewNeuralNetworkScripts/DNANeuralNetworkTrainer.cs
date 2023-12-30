@@ -87,7 +87,6 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
     public IEnumerator importFromFolder(List<string> paths, List<DNADataPoint> data)
     {
-
         createLine("Starting Image Importing");
         List<List<Texture2D>> newImages = new List<List<Texture2D>>();
         List<DNADataPoint> evalData = new List<DNADataPoint>();
@@ -252,6 +251,8 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
             System.DateTime startTime = System.DateTime.UtcNow;
 
+            currentLearningRate = (1.0 / (1.0 + networkSettings.learnRateDecay * epoch)) * networkSettings.initialLearningRate;
+
             //Teaching
             for (int i = 0; i < batches.Length; i++)
             {
@@ -266,7 +267,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
             }
             System.DateTime endTime = System.DateTime.UtcNow;
 
-            Debug.Log($"Epoch:{epoch} Training Time (sec): " + (endTime - startTime).TotalSeconds);
+            Debug.Log($"Epoch:{epoch}  Learning Rate:{currentLearningRate}   Training Time (sec): " + (endTime - startTime).TotalSeconds);
 
             //  StartCoroutine(displayCost(false, true, neuro, evaluateData));
 
@@ -428,8 +429,6 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
                 if (cost < bestCost)
                     bestCost = cost;
-                else
-                    currentLearningRate = currentLearningRate / 2;
 
                 yield return null;
             }
