@@ -62,11 +62,14 @@ namespace DNANeuralNet
 
         public DNAMatrix CalculateOutputs(DNAMatrix inputs)
         {
-            if (activation.GetActivationFunctionIndex() != ActivationIndex)
-                activation = DNAActivation.GetActivationFromIndex(ActivationIndex);
-
             if (DNAGPUParallelization.LayerOutputGPU != null)
-                return Parallelization.LayerOutputCalculationTrainingGPU(inputs).activation;
+            {
+                if (SystemInfo.deviceType == DeviceType.Desktop)
+                    return Parallelization.LayerOutputCalculationTrainingGPU(inputs).activation;
+                else
+                    return Parallelization.LayerOutputCalculationTrainingGPUFloat(inputs).activation;
+            }
+              
             else
                 return activation.Activate((weights * inputs) + biases);
         }

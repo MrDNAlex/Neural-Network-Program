@@ -140,6 +140,23 @@ namespace DNAMath
         }
 
         /// <summary>
+        /// Constructor function initializing the Matrix
+        /// </summary>
+        /// <param name="matrix"></param>
+        public DNAMatrix(DNAMatrixFloat matrix)
+        {
+            this.Width = matrix.Width;
+            this.Height = matrix.Height;
+
+            _values = new double[Width * Height];
+
+            for (int i = 0; i < matrix.Length; i++)
+            {
+                _values[i] = (double)matrix[i];
+            }
+        }
+
+        /// <summary>
         /// Indexer allowing us to get access and sey  to a value using array notation
         /// </summary>
         /// <param name="height"></param>
@@ -567,7 +584,6 @@ namespace DNAMath
                 ComputeBuffer matrixADim = new ComputeBuffer(1, sizeof(uint) * 2);
                 ComputeBuffer matrixBDim = new ComputeBuffer(1, sizeof(uint) * 2);
 
-
                 matrixAVals.SetData(new DNAMatrixFloat(matrixA).Values);
                 matrixBVals.SetData(new DNAMatrixFloat(matrixB).Values);
 
@@ -587,17 +603,21 @@ namespace DNAMath
                 //Calculate
                 computeShader.Dispatch(0, newMat.Width, newMat.Height, 1);
 
+                DNAMatrixFloat floatMatrix = new DNAMatrixFloat(newMat);
+
                 //Receaive Result
                 newMatrixVals.GetData(newMat.Values);
 
-                //Get rid of memory
-                matrixAVals.Dispose();
-                matrixBVals.Dispose();
-                newMatrixVals.Dispose();
+                newMat = new DNAMatrix(floatMatrix);
 
-                matrixADim.Dispose();
-                matrixBDim.Dispose();
-                newMatrixDim.Dispose();
+                //Get rid of memory
+                matrixAVals.Release();
+                matrixBVals.Release();
+                newMatrixVals.Release();
+
+                matrixADim.Release();
+                matrixBDim.Release();
+                newMatrixDim.Release();
             }
             else
                 Debug.Log("Error, Dimensions don't match");
