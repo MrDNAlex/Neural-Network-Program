@@ -12,6 +12,8 @@ struct MatrixDimensions
     }
 };
 
+static const int GROUP_SIZE = 32;
+
 //Dimensions      Node Values = cost Gradient Bias
 RWStructuredBuffer<MatrixDimensions> dimensions; //node Value
 
@@ -21,26 +23,60 @@ RWStructuredBuffer<double> nodeValues;
 //Expected Outputs
 RWStructuredBuffer<double> costGradientBias;
 
-
 int GetNodeIndex(int row, int column)
 {
-    return row * dimensions[0].width + column;
+    return (column * dimensions[0].height + row); // used to be (row * dimensions[0].width + column)
 }
 
 int GetNodeMatrixOffset(int matrixIndex)
 {
-    return matrixIndex * (dimensions[0].GetLength());
+    return matrixIndex * dimensions[0].GetLength();
 }
 
-[numthreads(1, 1, 1)]
+int GetTotalIndex(int row, int col, int matrixIndex)
+{
+    return GetNodeMatrixOffset(matrixIndex) + GetNodeIndex(row, col);
+
+}
+
+double GetValue(int row, int col, int matrixIndex)
+{
+    return nodeValues[GetNodeMatrixOffset(matrixIndex) + GetNodeIndex(row, col)];
+}
+
+groupshared double sharedArray[GROUP_SIZE];
+
+double GetSum()
+{
+    double sum = 0;
+    for (int i = 0; i < GROUP_SIZE; ++i)
+    {
+        sum += sharedArray[i];
+    }
+    
+    return sum;
+}
+
+[numthreads(1, 1, GROUP_SIZE)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     int row = DispatchThreadID.y;
     int col = DispatchThreadID.x;
     int matrixIndex = DispatchThreadID.z;
     
-    int nodeIndex = row * dimensions[0].width + col;
-    int matrixOffset = matrixIndex * (dimensions[0].GetLength());
-    
-    costGradientBias[nodeIndex] += nodeValues[matrixOffset + nodeIndex];
+    // Each thread computes its value
+    double value = nodeValues[GetNodeMatrixOffset(matrixIndex) + GetNodeIndex(row, col)];
+
+    // Write the value to shared memory
+    sharedArray[matrixIndex] = value;
+
+    // Synchronize to ensure all writes to shared memory are completed
+    GroupMemoryBarrierWithGroupSync();
+
+    // One thread in the group sums the values and writes to global memory
+    if (matrixIndex == 0)
+    {
+        // Perform the final operation
+        costGradientBias[GetNodeIndex(row, col)] += GetSum();
+    }
 }

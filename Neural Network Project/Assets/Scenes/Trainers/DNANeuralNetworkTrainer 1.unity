@@ -1484,33 +1484,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   newMode: 0
-  NeuralNetworkName: MatrixNeuro2
+  NeuralNetworkName: NeuroMatrixCross
   trainingFolderPaths:
   - ImageProcessing/0
   - ImageProcessing/1
-  - ImageProcessing/2
-  - ImageProcessing/3
+  UseParallelization: 1
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
-  maxCopies: 1
-  minCopies: 1
+  Copies: 1
   whiteBackground: 0
-  reshuffleIndex: 5
-  numOfEpochs: 70
-  trainingSplit: 0.8
+  evaluateIndex: 10
+  reshuffleIndex: 10
+  numOfEpochs: 100
+  trainingSplit: 0.85
   errorImagePath: 
   networkSettings:
-    networkSize: 100300002c01000004000000
-    activationType: 0
+    networkSize: 10030000400000004000000002000000
+    activationType: 2
     outputActivationType: 0
     costType: 1
-    initialLearningRate: 0.05
-    learnRateDecay: 0.075
+    initialLearningRate: 0.1
+    learnRateDecay: 0.05
     dataPerBatch: 32
     momentum: 0.9
     regularization: 0.1
-  outputNum: 4
+  outputNum: 2
   LoadImgsBTN: {fileID: 2137148501}
   TrainBTN: {fileID: 1977995373}
   Percent: {fileID: 1657550991}

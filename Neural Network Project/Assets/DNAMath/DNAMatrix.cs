@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEditor;
 using System;
+using System.IO;
 
 namespace DNAMath
 {
@@ -95,6 +96,11 @@ namespace DNAMath
         public int Width { get { return _width; } set { _width = value; } }
 
         /// <summary>
+        /// Gets the Dimensions of the Matrix in String Form (HeightxWidth)
+        /// </summary>
+        public string Dimensions { get { return $"({Height} x {Width})"; } }
+
+        /// <summary>
         /// Describes the number of values in the Matrix
         /// </summary>
         public int Length { get { return Width * Height; } }
@@ -131,6 +137,23 @@ namespace DNAMath
             this.Height = height;
 
             _values = new double[width * height];
+        }
+
+        /// <summary>
+        /// Constructor function initializing the Matrix
+        /// </summary>
+        /// <param name="matrix"></param>
+        public DNAMatrix(DNAMatrixFloat matrix)
+        {
+            this.Width = matrix.Width;
+            this.Height = matrix.Height;
+
+            _values = new double[Width * Height];
+
+            for (int i = 0; i < matrix.Length; i++)
+            {
+                _values[i] = (double)matrix[i];
+            }
         }
 
         /// <summary>
@@ -561,7 +584,6 @@ namespace DNAMath
                 ComputeBuffer matrixADim = new ComputeBuffer(1, sizeof(uint) * 2);
                 ComputeBuffer matrixBDim = new ComputeBuffer(1, sizeof(uint) * 2);
 
-
                 matrixAVals.SetData(new DNAMatrixFloat(matrixA).Values);
                 matrixBVals.SetData(new DNAMatrixFloat(matrixB).Values);
 
@@ -581,17 +603,21 @@ namespace DNAMath
                 //Calculate
                 computeShader.Dispatch(0, newMat.Width, newMat.Height, 1);
 
+                DNAMatrixFloat floatMatrix = new DNAMatrixFloat(newMat);
+
                 //Receaive Result
                 newMatrixVals.GetData(newMat.Values);
 
-                //Get rid of memory
-                matrixAVals.Dispose();
-                matrixBVals.Dispose();
-                newMatrixVals.Dispose();
+                newMat = new DNAMatrix(floatMatrix);
 
-                matrixADim.Dispose();
-                matrixBDim.Dispose();
-                newMatrixDim.Dispose();
+                //Get rid of memory
+                matrixAVals.Release();
+                matrixBVals.Release();
+                newMatrixVals.Release();
+
+                matrixADim.Release();
+                matrixBDim.Release();
+                newMatrixDim.Release();
             }
             else
                 Debug.Log("Error, Dimensions don't match");
@@ -776,6 +802,36 @@ namespace DNAMath
             Debug.Log(line);
 
             return line;
+        }
+
+        /// <summary>
+        /// Returns the Output Matrix Dimension of a Matrix Multiplication
+        /// </summary>
+        /// <param name="matrixA"></param>
+        /// <param name="matrixB"></param>
+        /// <returns></returns>
+        public static string GetMultOutputDimensions (DNAMatrix matrixA, DNAMatrix matrixB)
+        {
+            return $"({matrixA.Height} x {matrixB.Width})";
+        }
+
+        /// <summary>
+        /// Saves the Difference Matrix to the device for debugging purposes
+        /// </summary>
+        /// <param name="matrixA"></param>
+        /// <param name="matrixB"></param>
+        /// <param name="name"></param>
+        public static void SaveDifference(DNAMatrix matrixA, DNAMatrix matrixB, string name)
+        {
+            var dir = "Assets/Resources/matrix" + "/" + $"{name}" + ".json";
+
+            DNAMatrix difference = matrixA - matrixB;
+
+            string jsonData = JsonUtility.ToJson(difference, true);
+            jsonData += JsonUtility.ToJson(matrixA, true);
+            jsonData += JsonUtility.ToJson(matrixB, true);
+
+            File.WriteAllText(dir, jsonData);
         }
     }
 }

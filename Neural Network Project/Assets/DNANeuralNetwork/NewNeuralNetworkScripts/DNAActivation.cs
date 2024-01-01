@@ -7,7 +7,7 @@ using static System.Math;
 namespace DNANeuralNet
 {
 	[System.Serializable]
-	public readonly struct DNAActivation
+	public struct DNAActivation
 	{
 		[System.Serializable]
 		public enum ActivationType
@@ -32,6 +32,26 @@ namespace DNANeuralNet
 				case ActivationType.SiLU:
 					return new SiLU();
 				case ActivationType.Softmax:
+					return new Softmax();
+				default:
+					UnityEngine.Debug.LogError("Unhandled activation type");
+					return new Sigmoid();
+			}
+		}
+
+		public static IDNAActivation GetActivationFromIndex(int activationIndex)
+		{
+			switch (activationIndex)
+			{
+				case 1:
+					return new Sigmoid();
+				case 2:
+					return new TanH();
+				case 3:
+					return new ReLU();
+				case 4:
+					return new SiLU();
+				case 5:
 					return new Softmax();
 				default:
 					UnityEngine.Debug.LogError("Unhandled activation type");
