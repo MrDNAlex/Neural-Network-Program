@@ -64,7 +64,7 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
     DNADataPoint[] evaluateData;
     //DataPoint[,] feedingData;
     DNANeuralNetwork bestNetwork;
-    float lastAccuracy;
+    float lastAccuracy = 0;
     double bestCost = 10;
     double currentLearningRate;
 
@@ -712,6 +712,14 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
         {
             //Compare for best
 
+            //Check for first run
+            if (lastAccuracy == 0)
+            {
+                lastAccuracy = accuracy;
+                bestNetwork = network;
+                saveNetwork(bestNetwork, NeuralNetworkName + " (First)");
+            }
+
             if ((accuracy) >= lastAccuracy)
             {
                 //In the case they are equal, check for the lowest cost
@@ -762,5 +770,4 @@ public class DNANeuralNetworkTrainer : MonoBehaviour
 
         //Debug.Log("Saved");
     }
-
 }

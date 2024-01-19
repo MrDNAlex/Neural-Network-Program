@@ -1484,15 +1484,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   newMode: 0
-  NeuralNetworkName: NeuroMatrixCross
+  NeuralNetworkName: NeuroShapes
   trainingFolderPaths:
-  - ImageProcessing/0
-  - ImageProcessing/1
+  - Shapes\circle
+  - Shapes\square
+  - Shapes\star
+  - Shapes\triangle
   UseParallelization: 1
   useFolders: 1
   processImages: 1
   saveImportedTrainingImages: 0
-  Copies: 1
+  Copies: 10
   whiteBackground: 0
   evaluateIndex: 10
   reshuffleIndex: 10
@@ -1500,16 +1502,16 @@ MonoBehaviour:
   trainingSplit: 0.85
   errorImagePath: 
   networkSettings:
-    networkSize: 10030000400000004000000002000000
+    networkSize: 10030000400000004000000004000000
     activationType: 2
     outputActivationType: 0
-    costType: 1
+    costType: 0
     initialLearningRate: 0.1
     learnRateDecay: 0.05
     dataPerBatch: 32
     momentum: 0.9
     regularization: 0.1
-  outputNum: 2
+  outputNum: 4
   LoadImgsBTN: {fileID: 2137148501}
   TrainBTN: {fileID: 1977995373}
   Percent: {fileID: 1657550991}
